@@ -64,7 +64,7 @@ router.post('/upload/:jobId', async (req, res) => {
 
         // Extract and parse
         const text = await parserService.extractText(uploadPath);
-        const parsedResume = parserService.parseResume(text);
+        const parsedResume = parserService.parseResumeText(text);
 
         // Calculate score
         const scoringResult = scoringService.calculateScore(parsedResume, job);

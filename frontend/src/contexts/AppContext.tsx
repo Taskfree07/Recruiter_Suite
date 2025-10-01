@@ -23,6 +23,12 @@ interface AppContextType {
   managedCandidates: CandidateData[];
   setManagedCandidates: Dispatch<SetStateAction<CandidateData[]>>;
   addResumesToCandidate: (candidateId: string, resumes: UploadedResume[]) => void;
+  // Selected candidates for scoring
+  selectedCandidateIds: string[];
+  setSelectedCandidateIds: Dispatch<SetStateAction<string[]>>;
+  toggleCandidateSelection: (candidateId: string) => void;
+  selectAllCandidates: () => void;
+  clearSelectedCandidates: () => void;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -40,6 +46,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
   const [candidates, setCandidates] = useState<Candidate[]>([]);
   const [uploadedResumes, setUploadedResumes] = useState<UploadedResume[]>([]);
   const [loading, setLoading] = useState(false);
+  const [selectedCandidateIds, setSelectedCandidateIds] = useState<string[]>([]);
+
+  // Clear scores when a new job is uploaded
+  React.useEffect(() => {
+    if (currentJob) {
+      setManagedCandidates(prev => prev.map(candidate => ({
+        ...candidate,
+        score: undefined // Clear previous scores
+      })));
+    }
+  }, [currentJob?._id]); // Only trigger when job ID changes
   // Try to load seed data (generated from backend uploads) as a fallback
   let seed: CandidateData[] | null = null;
   try {
@@ -83,9 +100,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     setUploadedResumes(prev => [...prev, ...newResumes]);
   };
 
-  // Effect to save candidates to localStorage
+  // Effect to save candidates to localStorage (excluding File objects)
   React.useEffect(() => {
-    localStorage.setItem('managedCandidates', JSON.stringify(managedCandidates));
+    // Don't save File objects to localStorage as they can't be serialized
+    const candidatesForStorage = managedCandidates.map(candidate => ({
+      ...candidate,
+      resumes: candidate.resumes.map(resume => ({
+        ...resume,
+        file: null // Exclude File object from localStorage
+      }))
+    }));
+    localStorage.setItem('managedCandidates', JSON.stringify(candidatesForStorage));
   }, [managedCandidates]);
 
   const addResumesToCandidate = (candidateId: string, resumes: UploadedResume[]) => {
@@ -97,6 +122,25 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
       );
       return updated;
     });
+  };
+
+  const toggleCandidateSelection = (candidateId: string) => {
+    setSelectedCandidateIds(prev => 
+      prev.includes(candidateId)
+        ? prev.filter(id => id !== candidateId)
+        : [...prev, candidateId]
+    );
+  };
+
+  const selectAllCandidates = () => {
+    const candidatesWithResumes = managedCandidates
+      .filter(c => c.resumes.length > 0)
+      .map(c => c.id);
+    setSelectedCandidateIds(candidatesWithResumes);
+  };
+
+  const clearSelectedCandidates = () => {
+    setSelectedCandidateIds([]);
   };
 
   return (
@@ -114,6 +158,11 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
         managedCandidates,
         setManagedCandidates,
         addResumesToCandidate,
+        selectedCandidateIds,
+        setSelectedCandidateIds,
+        toggleCandidateSelection,
+        selectAllCandidates,
+        clearSelectedCandidates,
       }}
     >
       {children}

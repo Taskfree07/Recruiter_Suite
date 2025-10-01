@@ -5,7 +5,7 @@ import { checkCandidateFit } from '../../services/candidateScoringService';
 import toast from 'react-hot-toast';
 
 const CheckFitButton: React.FC = () => {
-  const { currentJob, managedCandidates, setManagedCandidates } = useApp();
+  const { currentJob, managedCandidates, setManagedCandidates, selectedCandidateIds } = useApp();
   const [processing, setProcessing] = useState(false);
 
   const handleCheckFit = async () => {
@@ -14,16 +14,38 @@ const CheckFitButton: React.FC = () => {
       return;
     }
 
-    const candidatesWithResumes = managedCandidates.filter(c => c.resumes.length > 0);
-    if (candidatesWithResumes.length === 0) {
-      toast.error('Please add resumes to at least one candidate');
+    const selectedCandidates = managedCandidates.filter(c => 
+      selectedCandidateIds.includes(c.id) && c.resumes.length > 0
+    );
+    
+    if (selectedCandidates.length === 0) {
+      toast.error('Please select candidates with resumes to analyze');
+      return;
+    }
+
+    // Check if any candidates have valid file paths
+    const candidatesWithFiles = selectedCandidates.filter(c => 
+      c.resumes.some(r => r.filePath)
+    );
+
+    if (candidatesWithFiles.length === 0) {
+      toast.error('No resume files found. Please re-upload resumes for the selected candidates.', {
+        duration: 6000
+      });
+      return;
+    }
+
+    if (candidatesWithFiles.length < selectedCandidates.length) {
+      toast.error(`${selectedCandidates.length - candidatesWithFiles.length} candidate(s) missing resume files. Please re-upload.`, {
+        duration: 5000
+      });
       return;
     }
 
     setProcessing(true);
 
     try {
-      const results = await checkCandidateFit(currentJob._id, candidatesWithResumes);
+      const results = await checkCandidateFit(currentJob._id, selectedCandidates);
       
       // Sort results by overall score
       const sortedResults = [...results].sort((a, b) => b.score.overall - a.score.overall);
@@ -44,13 +66,20 @@ const CheckFitButton: React.FC = () => {
       );
     } catch (error: any) {
       console.error('Analysis error:', error);
-      toast.error('Failed to analyze candidates');
+      const errorMessage = error.message || 'Failed to analyze candidates';
+      if (errorMessage.includes('No valid resume files')) {
+        toast.error('Resume files were lost. Please re-upload resumes for the selected candidates.', {
+          duration: 5000
+        });
+      } else {
+        toast.error(errorMessage);
+      }
     } finally {
       setProcessing(false);
     }
   };
 
-  const isDisabled = !currentJob || managedCandidates.every(c => c.resumes.length === 0) || processing;
+  const isDisabled = !currentJob || selectedCandidateIds.length === 0 || processing;
 
   return (
     <div className="mt-4">
@@ -82,9 +111,9 @@ const CheckFitButton: React.FC = () => {
         </p>
       )}
       
-      {currentJob && managedCandidates.every(c => c.resumes.length === 0) && (
+      {currentJob && selectedCandidateIds.length === 0 && (
         <p className="mt-2 text-sm text-gray-500 text-center">
-          Upload resumes to analyze their fit
+          Select candidates to analyze their fit
         </p>
       )}
     </div>

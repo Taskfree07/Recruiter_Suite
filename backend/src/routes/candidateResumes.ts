@@ -1,9 +1,56 @@
 import express from 'express';
 import fs from 'fs';
 import path from 'path';
+import { UploadedFile } from 'express-fileupload';
 import Candidate from '../models/candidate';
 
 const router = express.Router();
+
+// Upload resumes for a specific candidate
+router.post('/upload/:candidateId', async (req, res) => {
+  try {
+    const { candidateId } = req.params;
+    const files = req.files?.resumes;
+
+    if (!files) {
+      return res.status(400).json({ message: 'No files uploaded' });
+    }
+
+    // Handle both single and multiple files
+    const resumeFiles = Array.isArray(files) ? files : [files];
+    const uploadedResumes = [];
+
+    // Create candidate-specific directory
+    const candidateDir = path.join(__dirname, '../../uploads/resumes', candidateId);
+    if (!fs.existsSync(candidateDir)) {
+      fs.mkdirSync(candidateDir, { recursive: true });
+    }
+
+    // Save each resume
+    for (const file of resumeFiles) {
+      const uploadedFile = file as UploadedFile;
+      const fileName = `${Date.now()}_${uploadedFile.name}`;
+      const filePath = path.join(candidateDir, fileName);
+      
+      await uploadedFile.mv(filePath);
+      
+      uploadedResumes.push({
+        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        fileName: uploadedFile.name,
+        filePath: `uploads/resumes/${candidateId}/${fileName}`,
+        uploadedAt: new Date().toISOString()
+      });
+    }
+
+    res.json({
+      message: 'Resumes uploaded successfully',
+      resumes: uploadedResumes
+    });
+  } catch (error: any) {
+    console.error('Error uploading resumes:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
 
 // Helper function to get random resumes from a directory
 const getRandomResumes = (numResumes: number, sourcePath: string) => {

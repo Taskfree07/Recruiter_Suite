@@ -24,6 +24,15 @@ class ScoringService {
       keywordMatch: this.calculateKeywordMatch(candidateData.rawText, jobData.keywords)
     };
 
+    // Log for debugging
+    console.log('Scoring breakdown:', {
+      candidateName: candidateData.personalInfo?.name || 'Unknown',
+      skills: `${candidateData.skills?.length || 0} found, score: ${scores.skillMatch}`,
+      experience: `${candidateData.experience?.length || 0} entries, score: ${scores.experienceMatch}`,
+      keywords: `score: ${scores.keywordMatch}`,
+      textLength: candidateData.rawText?.length || 0
+    });
+
     // Calculate weighted overall score
     const overall = Math.round(
       scores.skillMatch * 0.4 +
@@ -46,16 +55,36 @@ class ScoringService {
   }
 
   private calculateSkillMatch(candidateSkills: string[], requiredSkills: string[]): number {
-    if (!requiredSkills.length) return 100;
+    if (!requiredSkills || !requiredSkills.length) return 50; // Neutral score if no requirements
+    if (!candidateSkills || !candidateSkills.length) return 0;
     
-    const matchedSkills = candidateSkills.filter(skill =>
-      requiredSkills.some(reqSkill => 
-        skill.toLowerCase().includes(reqSkill.toLowerCase()) ||
-        reqSkill.toLowerCase().includes(skill.toLowerCase())
-      )
-    );
-
-    return Math.round((matchedSkills.length / requiredSkills.length) * 100);
+    let totalScore = 0;
+    let matchedCount = 0;
+    
+    // Check each required skill
+    requiredSkills.forEach(reqSkill => {
+      const reqLower = reqSkill.toLowerCase();
+      
+      // Exact match gets full points
+      if (candidateSkills.some(skill => skill.toLowerCase() === reqLower)) {
+        totalScore += 100;
+        matchedCount++;
+      }
+      // Partial match gets partial points
+      else if (candidateSkills.some(skill => 
+        skill.toLowerCase().includes(reqLower) || reqLower.includes(skill.toLowerCase())
+      )) {
+        totalScore += 70;
+        matchedCount++;
+      }
+    });
+    
+    // Calculate percentage based on matched skills
+    const matchPercentage = (matchedCount / requiredSkills.length) * 100;
+    const avgScore = matchedCount > 0 ? totalScore / matchedCount : 0;
+    
+    // Weighted combination: 70% match percentage, 30% quality of matches
+    return Math.round(matchPercentage * 0.7 + avgScore * 0.3);
   }
 
   private calculateExperienceMatch(candidateExp: any[], requiredExp: number): number {
@@ -77,14 +106,30 @@ class ScoringService {
   }
 
   private calculateKeywordMatch(resumeText: string, keywords: string[]): number {
-    if (!keywords.length) return 100;
+    if (!keywords || !keywords.length) return 50; // Neutral if no keywords
+    if (!resumeText) return 0;
     
     const lowerText = resumeText.toLowerCase();
-    const matchedKeywords = keywords.filter(keyword => 
-      lowerText.includes(keyword.toLowerCase())
-    );
-
-    return Math.round((matchedKeywords.length / keywords.length) * 100);
+    const words = lowerText.split(/\W+/);
+    const wordSet = new Set(words);
+    
+    let matchScore = 0;
+    let totalKeywords = Math.min(keywords.length, 30); // Cap at 30 keywords for fairness
+    
+    keywords.slice(0, 30).forEach(keyword => {
+      const keyLower = keyword.toLowerCase();
+      
+      // Exact word match
+      if (wordSet.has(keyLower)) {
+        matchScore += 100;
+      }
+      // Substring match (less weight)
+      else if (lowerText.includes(keyLower)) {
+        matchScore += 50;
+      }
+    });
+    
+    return Math.round(matchScore / totalKeywords);
   }
 
   private generateImprovements(

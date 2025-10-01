@@ -2,19 +2,24 @@ import React from 'react';
 import { useApp } from '../../contexts/AppContext';
 
 const ScoringSummary: React.FC = () => {
-  const { candidates } = useApp();
+  const { managedCandidates } = useApp();
 
-  if (candidates.length === 0) return null;
+  // Get candidates with scores and sort by overall score
+  const scoredCandidates = managedCandidates
+    .filter(candidate => candidate.score)
+    .sort((a, b) => (b.score?.overall || 0) - (a.score?.overall || 0));
+
+  if (scoredCandidates.length === 0) return null;
 
   return (
     <div className="mt-4 bg-white shadow rounded-lg p-4">
       <h3 className="text-lg font-medium text-gray-900 mb-4">Scoring Summary</h3>
       <div className="space-y-3">
-        {candidates.map((candidate, index) => (
-          <div key={candidate._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+        {scoredCandidates.map((candidate, index) => (
+          <div key={candidate.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
             <div>
               <span className="text-sm font-medium text-gray-900">
-                {candidate.personalInfo?.name || candidate.fileName}
+                {candidate.name}
               </span>
               {index === 0 && (
                 <span className="ml-2 px-2 py-1 text-xs font-medium bg-green-100 text-green-800 rounded-full">

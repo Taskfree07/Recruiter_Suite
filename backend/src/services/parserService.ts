@@ -72,8 +72,14 @@ class ParserService {
     }
   }
 
+  // Parse resume from file path (extracts text first)
+  async parseResume(filePath: string): Promise<ParsedResume> {
+    const text = await this.extractText(filePath);
+    return this.parseResumeText(text);
+  }
+
   // Parse resume text
-  parseResume(text: string): ParsedResume {
+  parseResumeText(text: string): ParsedResume {
     const lines = text.split('\n').map(line => line.trim());
     
     // Extract email

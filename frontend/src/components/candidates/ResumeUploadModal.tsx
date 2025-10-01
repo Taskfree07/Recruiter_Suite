@@ -37,11 +37,32 @@ const ResumeUploadModal: React.FC<ResumeUploadModalProps> = ({ candidateId, onCl
         return;
       }
 
-      const newResumes = acceptedFiles.map(file => ({
-        id: `${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-        fileName: file.name,
-        file: file,
-        uploadedAt: new Date().toISOString(),
+      // Upload files to backend
+      const formData = new FormData();
+      acceptedFiles.forEach(file => {
+        formData.append('resumes', file);
+      });
+
+      const loadingToast = toast.loading('Uploading resumes...');
+
+      const response = await fetch(`http://localhost:5000/api/candidate-resumes/upload/${candidateId}`, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) {
+        throw new Error('Upload failed');
+      }
+
+      const data = await response.json();
+      
+      // Create resume objects with backend file paths
+      const newResumes = data.resumes.map((resume: any) => ({
+        id: resume.id,
+        fileName: resume.fileName,
+        filePath: resume.filePath,
+        file: null,
+        uploadedAt: resume.uploadedAt,
         candidateId,
         candidateName: candidate.name,
         score: undefined
@@ -56,6 +77,7 @@ const ResumeUploadModal: React.FC<ResumeUploadModalProps> = ({ candidateId, onCl
         prev.map(c => c.id === candidateId ? { ...c, resumes: updatedResumes } : c)
       );
       
+      toast.dismiss(loadingToast);
       toast.success(
         acceptedFiles.length === 1 
           ? 'Resume uploaded successfully' 

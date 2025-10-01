@@ -25,19 +25,21 @@ export const checkCandidateFit = async (
   candidates: CandidateData[]
 ): Promise<CandidateScoringResult[]> => {
   try {
-    const formData = new FormData();
-    formData.append('jobId', jobId);
+    // Send candidate IDs and let backend fetch files
+    const payload = {
+      jobId,
+      candidates: candidates.map(c => ({
+        id: c.id,
+        name: c.name,
+        resumePaths: c.resumes.map(r => r.filePath).filter(Boolean)
+      }))
+    };
     
-    // Group resumes by candidate
-    candidates.forEach((candidate) => {
-      candidate.resumes.forEach((resume: UploadedResume) => {
-        if (resume.file instanceof File) {
-          // Append candidate info to filename
-          const candidateFileName = `${candidate.id}_${resume.fileName}`;
-          formData.append('resumes', resume.file, candidateFileName);
-        }
-      });
-    });
+    // Check if any candidates have resumes
+    const totalResumes = payload.candidates.reduce((sum, c) => sum + c.resumePaths.length, 0);
+    if (totalResumes === 0) {
+      throw new Error('No valid resume files found. Please re-upload resumes for the selected candidates.');
+    }
 
     // Send all resumes for scoring
     const response = await axios.post<{
@@ -45,9 +47,9 @@ export const checkCandidateFit = async (
         candidateId: string;
         score: CandidateScoreBreakdown;
       }>;
-    }>(`${API_URL}/scoring/check-candidate-fit`, formData, {
+    }>(`${API_URL}/candidate-scoring/check-candidate-fit-by-path`, payload, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        'Content-Type': 'application/json',
       },
     });
 

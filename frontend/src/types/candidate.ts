@@ -4,8 +4,8 @@ export interface CandidateScore {
   experienceMatch: number;
   educationMatch: number;
   keywordMatch: number;
-  improvements: string[];
-  strengths: string[];
+  improvements?: string[];
+  strengths?: string[];
 }
 
 export interface CandidateData {
@@ -14,7 +14,8 @@ export interface CandidateData {
   resumes: {
     id: string;
     fileName: string;
-    file: File;
+    file: File | null;
+    filePath?: string;
     uploadedAt: string;
   }[];
   score?: CandidateScore;

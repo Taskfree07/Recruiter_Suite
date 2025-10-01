@@ -86,4 +86,89 @@ router.post('/check-candidate-fit', async (req, res) => {
   }
 });
 
+// Check candidate fit using stored file paths
+router.post('/check-candidate-fit-by-path', async (req, res) => {
+  try {
+    const { jobId, candidates } = req.body;
+
+    if (!candidates || candidates.length === 0) {
+      return res.status(400).json({ message: 'No candidates provided' });
+    }
+
+    const job = await Job.findById(jobId);
+    if (!job) {
+      return res.status(404).json({ message: 'Job not found' });
+    }
+
+    console.log('\n🎯 Job Requirements:');
+    console.log(`   Title: ${job.title}`);
+    console.log(`   Required Skills: ${job.requirements?.skills?.join(', ') || 'None'}`);
+    console.log(`   Experience: ${job.requirements?.experience || 0} years`);
+    console.log(`   Keywords: ${job.keywords?.length || 0} keywords\n`);
+
+    // Process each candidate's resumes
+    const results = await Promise.all(
+      candidates.map(async (candidate: any) => {
+        try {
+          if (!candidate.resumePaths || candidate.resumePaths.length === 0) {
+            return {
+              candidateId: candidate.id,
+              error: 'No resumes found for candidate'
+            };
+          }
+
+          const candidateScores = await Promise.all(
+            candidate.resumePaths.map(async (resumePath: string) => {
+              try {
+                // Parse and score the resume
+                const fullPath = path.join(__dirname, '../../', resumePath);
+                console.log(`\n📄 Processing resume: ${resumePath}`);
+                console.log(`   Full path: ${fullPath}`);
+                console.log(`   File exists: ${fs.existsSync(fullPath)}`);
+                
+                const parsedData = await parserService.parseResume(fullPath);
+                console.log(`   Skills found: ${parsedData.skills?.length || 0}`);
+                console.log(`   Text length: ${parsedData.rawText?.length || 0} chars`);
+                
+                const scoringResult = scoringService.calculateScore(parsedData, job);
+                console.log(`   Score: ${scoringResult.score.overall}%\n`);
+
+                return scoringResult.score;
+              } catch (error) {
+                console.error(`   ❌ Error processing ${resumePath}:`, error);
+                throw error;
+              }
+            })
+          );
+
+          // Calculate aggregate score for the candidate
+          const aggregateScore = {
+            overall: Math.round(candidateScores.reduce((acc, score) => acc + score.overall, 0) / candidateScores.length),
+            skillMatch: Math.round(candidateScores.reduce((acc, score) => acc + score.skillMatch, 0) / candidateScores.length),
+            experienceMatch: Math.round(candidateScores.reduce((acc, score) => acc + score.experienceMatch, 0) / candidateScores.length),
+            educationMatch: Math.round(candidateScores.reduce((acc, score) => acc + score.educationMatch, 0) / candidateScores.length),
+            keywordMatch: Math.round(candidateScores.reduce((acc, score) => acc + score.keywordMatch, 0) / candidateScores.length),
+          };
+
+          return {
+            candidateId: candidate.id,
+            score: aggregateScore,
+          };
+        } catch (error) {
+          console.error(`Error processing candidate ${candidate.id}:`, error);
+          return {
+            candidateId: candidate.id,
+            error: 'Failed to process candidate'
+          };
+        }
+      })
+    );
+
+    res.json({ results });
+  } catch (error: any) {
+    console.error('Error in check-candidate-fit-by-path:', error);
+    res.status(500).json({ message: error.message });
+  }
+});
+
 export default router;
