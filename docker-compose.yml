@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:6.0
+    container_name: ats-mongodb
+    restart: unless-stopped
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-password123}
+      MONGO_INITDB_DATABASE: ats_resume_optimizer
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - ats-network
+
+  # Backend API
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ats-backend
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    environment:
+      NODE_ENV: production
+      PORT: 5000
+      MONGODB_URI: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-password123}@mongodb:27017/ats_resume_optimizer?authSource=admin
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      CORS_ORIGIN: ${CORS_ORIGIN:-http://localhost:3000}
+    volumes:
+      - ./backend/uploads:/app/uploads
+    depends_on:
+      - mongodb
+    networks:
+      - ats-network
+
+  # Frontend React App
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: ats-frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    environment:
+      REACT_APP_API_URL: ${REACT_APP_API_URL:-http://localhost:5000}
+    depends_on:
+      - backend
+    networks:
+      - ats-network
+
+networks:
+  ats-network:
+    driver: bridge
+
+volumes:
+  mongodb_data:
+    driver: local
