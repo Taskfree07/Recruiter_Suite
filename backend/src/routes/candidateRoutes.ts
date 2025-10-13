@@ -57,7 +57,7 @@ router.post('/upload/:jobId', async (req, res) => {
       try {
         const resumeFile = file as UploadedFile;
         const fileName = `resume_${Date.now()}_${resumeFile.name}`;
-        const uploadPath = path.join(__dirname, '../../uploads/resumes', fileName);
+        const uploadPath = path.join(process.cwd(), 'uploads', 'resumes', fileName);
 
         // Save file
         await resumeFile.mv(uploadPath);

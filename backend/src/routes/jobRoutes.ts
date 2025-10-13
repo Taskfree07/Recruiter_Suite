@@ -15,7 +15,7 @@ router.post('/upload', async (req, res) => {
 
     const jdFile = req.files.jd as UploadedFile;
     const fileName = `jd_${Date.now()}${path.extname(jdFile.name)}`;
-    const uploadPath = path.join(__dirname, '../../uploads/jd', fileName);
+    const uploadPath = path.join(process.cwd(), 'uploads', 'jd', fileName);
 
     // Save file
     await jdFile.mv(uploadPath);
