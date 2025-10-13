@@ -12,7 +12,6 @@ const JobUpload: React.FC = () => {
   const [company, setCompany] = useState('');
   const [mode, setMode] = useState<'upload' | 'text'>('upload');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [jobTitle, setJobTitle] = useState('');
   const [jdText, setJdText] = useState('');
   const [processing, setProcessing] = useState(false);
 
@@ -49,7 +48,7 @@ const JobUpload: React.FC = () => {
           toast.error('Please enter job description text');
           return;
         }
-        const response = await jobService.importText(jdText, { company: company || undefined, title: jobTitle || undefined, fileName: 'manual-input.txt' });
+        const response = await jobService.importText(jdText, { fileName: 'manual-input.txt' });
         setCurrentJob(response.job);
         toast.success('Job description imported successfully!');
       }
@@ -83,66 +82,55 @@ const JobUpload: React.FC = () => {
               Write Text
             </button>
           </div>
-          
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
-              Company Name
-            </label>
-            <input
-              type="text"
-              value={company}
-              onChange={(e) => setCompany(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="Enter company name"
-            />
-          </div>
 
           {mode === 'upload' ? (
-            <div
-              {...getRootProps()}
-              className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
-                ${isDragActive ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-indigo-400'}`}
-            >
-              <input {...getInputProps()} />
-              <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400 mb-3" />
-              {isDragActive ? (
-                <p className="text-indigo-600">Drop the file here...</p>
-              ) : (
-                <>
-                  <p className="text-gray-600">
-                    Drag & drop a job description here, or click to select
-                  </p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    Supports PDF, DOC, DOCX, TXT
-                  </p>
-                  {selectedFile && (
-                    <p className="text-sm text-gray-700 mt-3">Selected: <span className="font-medium">{selectedFile.name}</span></p>
-                  )}
-                </>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-3">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Job Title (optional)</label>
+            <>
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Company Name
+                </label>
                 <input
                   type="text"
-                  value={jobTitle}
-                  onChange={(e) => setJobTitle(e.target.value)}
+                  value={company}
+                  onChange={(e) => setCompany(e.target.value)}
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="e.g. Senior Frontend Engineer"
+                  placeholder="Enter company name"
                 />
               </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Job Description Text</label>
-                <textarea
-                  value={jdText}
-                  onChange={(e) => setJdText(e.target.value)}
-                  rows={6}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                  placeholder="Paste or write the job description here..."
-                />
+              <div
+                {...getRootProps()}
+                className={`border-2 border-dashed rounded-lg p-8 text-center cursor-pointer transition-colors
+                  ${isDragActive ? 'border-indigo-500 bg-indigo-50' : 'border-gray-300 hover:border-indigo-400'}`}
+              >
+                <input {...getInputProps()} />
+                <DocumentTextIcon className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                {isDragActive ? (
+                  <p className="text-indigo-600">Drop the file here...</p>
+                ) : (
+                  <>
+                    <p className="text-gray-600">
+                      Drag & drop a job description here, or click to select
+                    </p>
+                    <p className="text-sm text-gray-500 mt-2">
+                      Supports PDF, DOC, DOCX, TXT
+                    </p>
+                    {selectedFile && (
+                      <p className="text-sm text-gray-700 mt-3">Selected: <span className="font-medium">{selectedFile.name}</span></p>
+                    )}
+                  </>
+                )}
               </div>
+            </>
+          ) : (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Job Description Text</label>
+              <textarea
+                value={jdText}
+                onChange={(e) => setJdText(e.target.value)}
+                rows={8}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                placeholder="Paste or write the job description here..."
+              />
             </div>
           )}
 

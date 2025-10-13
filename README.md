@@ -294,9 +294,22 @@ Candidate Rankings:
 
 See `TROUBLESHOOTING.md` for more details.
 
+## 🚀 Deployment
+
+Ready to deploy and showcase your application? Check out the comprehensive deployment guide:
+
+**[📖 Deployment Guide](DEPLOYMENT.md)** - Complete step-by-step instructions for deploying to:
+- **Render** (Free, Recommended for showcasing)
+- **Docker** (For VPS or self-hosting)
+- Environment configuration
+- Troubleshooting deployment issues
+
+Quick deploy to Render in 15 minutes - perfect for portfolio projects!
+
 ## 📚 Documentation
 
 - **[Setup Guide](SETUP_EXISTING_RESUMES.md)** - Detailed setup instructions
+- **[Deployment Guide](DEPLOYMENT.md)** - Production deployment instructions
 - **[Scoring Algorithm](SCORING_IMPROVEMENTS.md)** - How scoring works
 - **[Implementation Notes](IMPLEMENTATION_NOTES.md)** - Technical details
 - **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and fixes

@@ -14,11 +14,36 @@ import candidateRoutes from './routes/candidateRoutes';
 import scoringRoutes from './routes/scoringRoutes';
 import candidateScoringRoutes from './routes/candidateScoringRoutes';
 import candidateResumesRoutes from './routes/candidateResumes';
+import fileRoutes from './routes/fileRoutes';
 const app: Application = express();
 
 // Middleware
+// Configure CORS for both development and production
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:3001',
+  'http://localhost:3002',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:3001',
+  'http://127.0.0.1:3002',
+];
+
+// Add production frontend URL from environment variable
+if (process.env.FRONTEND_URL) {
+  allowedOrigins.push(process.env.FRONTEND_URL);
+}
+
 app.use(cors({
-  origin: ['http://localhost:3000', 'http://localhost:3001', 'http://localhost:3002', 'http://127.0.0.1:3000', 'http://127.0.0.1:3001', 'http://127.0.0.1:3002'],
+  origin: (origin, callback) => {
+    // Allow requests with no origin (like mobile apps or curl requests)
+    if (!origin) return callback(null, true);
+
+    if (allowedOrigins.indexOf(origin) !== -1 || process.env.NODE_ENV === 'development') {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -39,6 +64,40 @@ uploadDirs.forEach((dir) => {
     fs.mkdirSync(dir, { recursive: true });
   }
 });
+
+// Serve uploaded files statically - MUST be before other routes
+const uploadsPath = path.join(process.cwd(), 'uploads');
+console.log('Serving static files from:', uploadsPath);
+console.log('Directory exists:', fs.existsSync(uploadsPath));
+
+// Test route
+app.get('/test', (req, res) => {
+  res.send('Backend is working!');
+});
+
+// File serving route - inline
+app.get('/api/files/resumes/:candidateId/:filename', (req, res) => {
+  const { candidateId, filename } = req.params;
+  const filePath = path.join(process.cwd(), 'uploads', 'resumes', candidateId, filename);
+
+  console.log('Requested file:', filePath);
+  console.log('File exists:', fs.existsSync(filePath));
+
+  if (!fs.existsSync(filePath)) {
+    return res.status(404).json({ error: 'File not found' });
+  }
+
+  // Set proper headers for PDF
+  res.setHeader('Content-Type', 'application/pdf');
+  res.setHeader('Content-Disposition', 'inline');
+
+  // Stream the file
+  const fileStream = fs.createReadStream(filePath);
+  fileStream.pipe(res);
+});
+
+// Serve static files - simple express.static
+app.use('/uploads', express.static(uploadsPath));
 
 // Routes
 app.use('/api/jobs', jobRoutes);

@@ -24,8 +24,8 @@ const CandidateList: React.FC = () => {
   };
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
+    <div className="space-y-4 flex-1 flex flex-col h-full">
+      <div className="flex justify-between items-center flex-shrink-0">
         <div className="flex space-x-2">
           <button
             onClick={() => setFilter('all')}
@@ -70,11 +70,11 @@ const CandidateList: React.FC = () => {
       </div>
 
       {sortedCandidates.length === 0 ? (
-        <div className="text-center py-12 bg-gray-50 rounded-lg">
+        <div className="text-center py-12 bg-gray-50 rounded-lg flex-1">
           <p className="text-gray-500">No candidates found</p>
         </div>
       ) : (
-        <div className="grid gap-4">
+        <div className="grid grid-cols-2 gap-4 flex-1 overflow-y-auto">
           {sortedCandidates.map((candidate) => (
             <CandidateCard
               key={candidate._id}

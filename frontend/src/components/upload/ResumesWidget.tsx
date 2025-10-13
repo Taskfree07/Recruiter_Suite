@@ -10,7 +10,7 @@ const ResumesWidget: React.FC = () => {
     .filter(candidate => selectedCandidateIds.includes(candidate.id));
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 h-fit">
+    <div className="bg-white rounded-lg shadow-md p-6">
       <div className="flex justify-between items-center mb-4">
         <h2 className="text-xl font-semibold">Selected Candidates</h2>
         <span className="bg-indigo-100 text-indigo-800 text-sm font-medium px-2.5 py-0.5 rounded">

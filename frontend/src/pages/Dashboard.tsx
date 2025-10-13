@@ -15,9 +15,9 @@ const Dashboard: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50">
       <Header />
-      
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
+
+      <div className="w-full px-4 sm:px-6 lg:px-8 py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 h-full">
           {/* Left Sidebar - Upload Section */}
           <div className="lg:col-span-1 space-y-6">
             <JobUpload />
@@ -48,15 +48,25 @@ const Dashboard: React.FC = () => {
 
           {/* Main Content Area */}
           <div className="lg:col-span-3">
-            <div className="grid grid-cols-1 md:grid-cols-12 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-12 gap-4 h-full">
               {/* Left side - Resume Widget and Check Fit */}
-              <div className="md:col-span-8 space-y-4">
+              <div className="md:col-span-8 space-y-4 flex flex-col">
                 {currentJob ? (
                   <>
-                    <ResumesWidget />
-                    <CheckFitButton />
-                    <ScoringSummary />
-                    {managedCandidates.length > 0 && <CandidateList />}
+                    <div className="flex-shrink-0">
+                      <ResumesWidget />
+                    </div>
+                    <div className="flex-shrink-0">
+                      <CheckFitButton />
+                    </div>
+                    <div className="flex-shrink-0">
+                      <ScoringSummary />
+                    </div>
+                    {managedCandidates.length > 0 && (
+                      <div className="flex-1 min-h-0">
+                        <CandidateList />
+                      </div>
+                    )}
                   </>
                 ) : (
                   <div className="bg-white rounded-lg shadow-md p-12 text-center">
@@ -82,7 +92,7 @@ const Dashboard: React.FC = () => {
               </div>
               
               {/* Right side - Candidates Widget */}
-              <div className="md:col-span-4">
+              <div className="md:col-span-4 flex">
                 <CandidatesWidget />
               </div>
             </div>

@@ -104,20 +104,26 @@ const CandidateCard: React.FC<Props> = ({ candidate, onStatusChange }) => {
         </div>
 
         <div className="ml-6">
-          <div style={{ width: 100, height: 100 }}>
-            <CircularProgressbar
-              value={candidate.score?.overall || 0}
-              text={`${candidate.score?.overall || 0}%`}
-              styles={buildStyles({
-                pathColor: getScoreColor(candidate.score?.overall || 0),
-                textColor: '#333',
-                trailColor: '#e5e7eb',
-              })}
-            />
-          </div>
+          {candidate.score?.overall ? (
+            <div style={{ width: 100, height: 100 }}>
+              <CircularProgressbar
+                value={candidate.score.overall}
+                text={`${candidate.score.overall}%`}
+                styles={buildStyles({
+                  pathColor: getScoreColor(candidate.score.overall),
+                  textColor: '#333',
+                  trailColor: '#e5e7eb',
+                })}
+              />
+            </div>
+          ) : (
+            <div style={{ width: 100, height: 100 }} className="flex items-center justify-center text-gray-400 text-sm text-center">
+              No score yet
+            </div>
+          )}
           <div className="mt-2 text-center">
             <span className={`px-2 py-1 rounded-full text-xs font-medium
-              ${candidate.status === 'shortlisted' ? 'bg-green-100 text-green-800' : 
+              ${candidate.status === 'shortlisted' ? 'bg-green-100 text-green-800' :
                 candidate.status === 'hold' ? 'bg-yellow-100 text-yellow-800' :
                 candidate.status === 'rejected' ? 'bg-red-100 text-red-800' :
                 'bg-gray-100 text-gray-800'}`}>

@@ -75,7 +75,12 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     const saved = typeof window !== 'undefined' ? localStorage.getItem('managedCandidates') : null;
     if (saved) {
       try {
-        return JSON.parse(saved);
+        const parsed = JSON.parse(saved);
+        // Clear scores on page load/refresh
+        return parsed.map((candidate: CandidateData) => ({
+          ...candidate,
+          score: undefined
+        }));
       } catch (error) {
         console.error('Failed to parse saved candidates:', error);
       }
