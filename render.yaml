@@ -9,8 +9,8 @@ services:
     env: node
     region: oregon # Change to your preferred region (oregon, frankfurt, singapore)
     plan: free # Options: free, starter ($7), standard ($25)
-    buildCommand: cd backend && npm install
-    startCommand: cd backend && node src/server.js
+    buildCommand: cd backend && npm install && npm run build
+    startCommand: cd backend && npm start
     healthCheckPath: /api/health
     envVars:
       - key: NODE_ENV

@@ -70,6 +70,15 @@ const uploadsPath = path.join(process.cwd(), 'uploads');
 console.log('Serving static files from:', uploadsPath);
 console.log('Directory exists:', fs.existsSync(uploadsPath));
 
+// Health check endpoint for deployment platforms
+app.get('/api/health', (req, res) => {
+  res.status(200).json({
+    status: 'ok',
+    message: 'Server is running',
+    timestamp: new Date().toISOString()
+  });
+});
+
 // Test route
 app.get('/test', (req, res) => {
   res.send('Backend is working!');

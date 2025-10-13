@@ -6,15 +6,22 @@ WORKDIR /app
 
 # Copy package files
 COPY package*.json ./
+COPY tsconfig.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install ALL dependencies (including devDependencies for building)
+RUN npm install
 
 # Copy application files
 COPY . .
 
+# Build TypeScript to JavaScript
+RUN npm run build
+
+# Remove devDependencies to reduce image size
+RUN npm prune --production
+
 # Create uploads directory
-RUN mkdir -p uploads/resumes uploads/jobs
+RUN mkdir -p uploads/resumes uploads/jobs uploads/jd uploads/temp
 
 # Expose port
 EXPOSE 5000
@@ -22,5 +29,5 @@ EXPOSE 5000
 # Set environment to production
 ENV NODE_ENV=production
 
-# Start the application
-CMD ["node", "src/server.js"]
+# Start the application from compiled dist folder
+CMD ["node", "dist/server.js"]
