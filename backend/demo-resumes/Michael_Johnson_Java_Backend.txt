@@ -1,0 +1,77 @@
+MICHAEL JOHNSON
+Senior Java Backend Developer
+
+Contact: michael.johnson@techmail.com | +1 (555) 987-6543
+Location: Austin, TX | LinkedIn: linkedin.com/in/michaeljohnson
+
+SUMMARY
+Results-driven Senior Java Backend Developer with 8+ years of experience in designing and implementing enterprise-level applications. Expertise in Java, Spring Boot, microservices architecture, and cloud technologies.
+
+CORE COMPETENCIES
+Languages: Java, Kotlin, Groovy, SQL
+Frameworks: Spring Boot, Spring Cloud, Hibernate, JPA
+Databases: PostgreSQL, MySQL, Oracle, Cassandra
+Cloud: AWS (ECS, RDS, CloudWatch), Google Cloud Platform
+Tools & Technologies: Docker, Kubernetes, Kafka, RabbitMQ, Elasticsearch
+Methodologies: Microservices, REST API, GraphQL, TDD, CI/CD
+
+PROFESSIONAL EXPERIENCE
+
+Senior Backend Engineer | Enterprise Solutions Inc | Austin, TX
+March 2019 - Present
+• Designed and developed microservices architecture using Spring Boot and Spring Cloud for financial services platform
+• Built high-performance RESTful APIs handling 10M+ requests per day with 99.9% uptime
+• Implemented event-driven architecture using Apache Kafka for real-time data processing
+• Optimized database queries reducing response time by 60% and improved overall system performance
+• Led technical design reviews and mentored team of 4 junior developers
+• Deployed applications on AWS using Docker and Kubernetes for container orchestration
+
+Java Developer | FinTech Innovations | Dallas, TX
+January 2017 - February 2019
+• Developed backend services for payment processing system using Java and Spring Framework
+• Created and maintained RESTful web services for mobile and web applications
+• Implemented security features including OAuth 2.0, JWT authentication, and encryption
+• Worked with PostgreSQL and MongoDB databases, designing efficient schemas
+• Participated in code reviews and maintained high code quality standards
+• Implemented automated unit and integration tests achieving 90% code coverage
+
+Software Engineer | CodeCraft Solutions | Houston, TX
+June 2015 - December 2016
+• Developed Java-based web applications using Spring MVC and Hibernate
+• Created database schemas and wrote complex SQL queries for reporting
+• Integrated third-party APIs and payment gateways
+• Debugged and resolved production issues in timely manner
+
+EDUCATION
+Master of Science in Computer Science
+University of Texas at Austin | 2015
+Focus: Distributed Systems and Software Engineering
+
+Bachelor of Technology in Information Technology
+Texas A&M University | 2013
+
+CERTIFICATIONS
+• Oracle Certified Professional, Java SE 11 Developer
+• AWS Certified Developer - Associate
+• Spring Professional Certification
+
+NOTABLE PROJECTS
+
+Payment Gateway Integration Platform (2022-2023)
+• Led development of multi-currency payment processing system
+• Integrated with major payment providers (Stripe, PayPal, Square)
+• Processed $50M+ in transactions monthly with zero downtime
+
+Real-Time Analytics Engine (2021)
+• Built data pipeline using Kafka and Elasticsearch for log analysis
+• Processed 5TB+ data daily with sub-second query responses
+• Implemented monitoring dashboards using Grafana and Prometheus
+
+TECHNICAL ACHIEVEMENTS
+• Reduced API response time from 2s to 300ms through optimization
+• Improved system throughput by 150% through architectural improvements
+• Implemented automated deployment pipeline reducing deployment time by 80%
+
+OPEN SOURCE CONTRIBUTIONS
+• Active contributor to Spring Framework and Apache Kafka projects
+• Maintained Java library for payment processing with 1000+ GitHub stars

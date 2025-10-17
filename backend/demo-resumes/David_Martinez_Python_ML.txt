@@ -1,0 +1,115 @@
+DAVID MARTINEZ
+Machine Learning Engineer / Python Developer
+
+Contact: david.martinez@mltech.com | (555) 345-6789
+Location: Boston, MA | GitHub: github.com/davidmartinez
+
+PROFESSIONAL PROFILE
+Innovative Machine Learning Engineer with 6 years of experience in developing AI-powered solutions and scalable Python applications. Specialized in NLP, computer vision, and predictive analytics. Strong background in both research and production ML systems.
+
+TECHNICAL EXPERTISE
+
+Programming Languages:
+Python, R, SQL, Scala, JavaScript
+
+Machine Learning & AI:
+• Deep Learning: TensorFlow, PyTorch, Keras, Neural Networks
+• ML Frameworks: Scikit-learn, XGBoost, LightGBM, CatBoost
+• NLP: NLTK, spaCy, Transformers, BERT, GPT, Hugging Face
+• Computer Vision: OpenCV, YOLO, CNN, Image Processing
+
+Data Science & Analytics:
+• NumPy, Pandas, Matplotlib, Seaborn, Plotly
+• Jupyter Notebooks, Data Visualization, Statistical Analysis
+• A/B Testing, Experiment Design, Feature Engineering
+
+MLOps & Deployment:
+• Docker, Kubernetes, MLflow, Kubeflow
+• AWS SageMaker, Google Cloud AI Platform
+• FastAPI, Flask, REST APIs
+• CI/CD, Model Versioning, Monitoring
+
+Databases:
+PostgreSQL, MongoDB, Redis, Elasticsearch
+
+PROFESSIONAL EXPERIENCE
+
+Senior ML Engineer | AI Innovations Corp | Boston, MA
+February 2021 - Present
+• Developed and deployed production ML models serving 2M+ users with 95% accuracy
+• Built NLP pipeline for sentiment analysis processing 100K+ documents daily
+• Designed computer vision system for product recognition achieving 98% precision
+• Implemented MLOps pipeline reducing model deployment time from weeks to hours
+• Created automated feature engineering framework improving model performance by 25%
+• Led team of 3 ML engineers in developing recommendation engine generating $5M additional revenue
+
+Machine Learning Engineer | DataTech Solutions | Cambridge, MA
+March 2019 - January 2021
+• Developed predictive models for customer churn reduction saving company $2M annually
+• Built real-time fraud detection system using ensemble methods and neural networks
+• Implemented data pipelines processing 10TB+ data monthly using Apache Spark
+• Created A/B testing framework for model evaluation and experimentation
+• Collaborated with product team to integrate ML features into mobile app
+• Maintained model monitoring dashboard tracking performance metrics
+
+Python Developer | StartupML | Boston, MA
+June 2017 - February 2019
+• Developed backend services using Python, Django, and Flask frameworks
+• Built data processing pipelines for ETL operations
+• Implemented RESTful APIs for ML model serving
+• Created data visualization dashboards for business insights
+• Worked with cross-functional teams on data-driven projects
+
+EDUCATION
+
+Master of Science in Computer Science
+Massachusetts Institute of Technology (MIT) | Boston, MA
+Specialization: Artificial Intelligence and Machine Learning
+Graduated: May 2017 | GPA: 3.9/4.0
+Thesis: "Deep Learning Approaches for Natural Language Understanding"
+
+Bachelor of Science in Mathematics
+Boston University | Boston, MA
+Graduated: May 2015 | Summa Cum Laude
+
+CERTIFICATIONS
+• TensorFlow Developer Certificate - Google
+• AWS Certified Machine Learning - Specialty
+• Deep Learning Specialization - deeplearning.ai (Coursera)
+• Professional Data Scientist - DataCamp
+
+RESEARCH & PUBLICATIONS
+• "Efficient Neural Architecture Search using Reinforcement Learning" - NeurIPS 2022
+• "Transfer Learning for Medical Image Classification" - CVPR 2021
+• Co-authored 5 peer-reviewed papers in top-tier ML conferences
+
+KEY PROJECTS
+
+Healthcare Diagnosis Assistant (2023)
+• Developed AI model for early disease detection from medical images
+• Achieved 96% accuracy using CNN and transfer learning
+• Deployed on AWS with HIPAA compliance
+• Tech Stack: PyTorch, FastAPI, Docker, AWS
+
+Customer Segmentation Platform (2022)
+• Built clustering and classification models for user behavior analysis
+• Processed 50M+ user interactions for personalized recommendations
+• Improved customer retention by 30%
+• Tech Stack: Python, Scikit-learn, Airflow, PostgreSQL
+
+Chatbot with NLP (2021)
+• Created conversational AI using transformer models
+• Implemented intent classification and entity extraction
+• Handles 10K+ conversations daily with 90% satisfaction rate
+• Tech Stack: BERT, Hugging Face, Flask, Redis
+
+ACHIEVEMENTS & RECOGNITION
+• Winner of Kaggle Competition "NLP for Customer Feedback" (Top 1%)
+• Patent pending for "Novel Approach to Few-Shot Learning"
+• Speaker at PyData Boston 2023 on "Scaling ML Systems"
+• Published technical blogs with 50K+ combined views
+
+ADDITIONAL SKILLS
+• Strong communication and presentation skills
+• Experience leading technical workshops and mentoring
+• Active contributor to open-source ML projects (TensorFlow, scikit-learn)

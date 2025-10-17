@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowLeftIcon,
@@ -12,6 +12,41 @@ import {
 
 const RecruiterFlow: React.FC = () => {
   const navigate = useNavigate();
+
+  // Function to manually clear localStorage
+  const clearOldData = () => {
+    console.log('🧹 Manually clearing old data...');
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.includes('candidate') || key.includes('resume') || key.includes('job') || key.includes('ats')) {
+        console.log(`Clearing localStorage key: ${key}`);
+        localStorage.removeItem(key);
+      }
+    });
+    localStorage.removeItem('managedCandidates');
+    alert('✅ Old data cleared! The page will refresh.');
+    window.location.reload();
+  };
+
+  // Set recruiter flow view mode when this page loads
+  useEffect(() => {
+    console.log('🎯 RecruiterFlow page loaded - clearing localStorage to hide old imports...');
+    
+    // Clear localStorage completely when viewing Recruiter Flow
+    // This will remove any old imported data from being visible
+    const keys = Object.keys(localStorage);
+    keys.forEach(key => {
+      if (key.includes('candidate') || key.includes('resume') || key.includes('job') || key.includes('ats')) {
+        console.log(`Clearing localStorage key: ${key}`);
+        localStorage.removeItem(key);
+      }
+    });
+    
+    // Also remove the main data key
+    localStorage.removeItem('managedCandidates');
+    
+    console.log('✅ Old import data cleared from view');
+  }, []);
 
   const upcomingFeatures = [
     {
@@ -156,13 +191,16 @@ const RecruiterFlow: React.FC = () => {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <button
-              onClick={() => navigate('/ats-optimizer')}
+              onClick={() => navigate('/recruiter-dashboard')}
               className="px-8 py-3 bg-white text-green-600 rounded-lg font-semibold hover:bg-gray-100 transition-colors"
             >
-              Try ATS Optimizer Now
+              Try Recruiter Dashboard (Beta)
             </button>
-            <button className="px-8 py-3 bg-green-700 text-white rounded-lg font-semibold hover:bg-green-800 transition-colors">
-              Notify Me on Launch
+            <button
+              onClick={() => navigate('/ats-optimizer')}
+              className="px-8 py-3 bg-green-700 text-white rounded-lg font-semibold hover:bg-green-800 transition-colors"
+            >
+              Try ATS Optimizer
             </button>
           </div>
         </div>
@@ -189,12 +227,21 @@ const RecruiterFlow: React.FC = () => {
               <span className="text-gray-700">Get AI-powered insights on skill matches and improvements</span>
             </li>
           </ul>
-          <button
-            onClick={() => navigate('/ats-optimizer')}
-            className="mt-6 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
-          >
-            Go to ATS Optimizer →
-          </button>
+          <div className="flex flex-col sm:flex-row gap-4 mt-6">
+            <button
+              onClick={() => navigate('/ats-optimizer')}
+              className="px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white rounded-lg font-semibold hover:shadow-lg transition-all"
+            >
+              Go to ATS Optimizer →
+            </button>
+            <button
+              onClick={clearOldData}
+              className="px-4 py-2 bg-red-500 text-white rounded-lg text-sm font-medium hover:bg-red-600 transition-colors"
+              title="Clear old imported data if still visible"
+            >
+              🧹 Clear Old Data
+            </button>
+          </div>
         </div>
       </div>
 

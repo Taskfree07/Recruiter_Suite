@@ -5,6 +5,11 @@ import { AppProvider } from './contexts/AppContext';
 import HomePage from './pages/HomePage';
 import Dashboard from './pages/Dashboard';
 import RecruiterFlow from './pages/RecruiterFlow';
+import RecruiterDashboard from './pages/RecruiterDashboard';
+import CeipalSettings from './pages/CeipalSettings';
+import CeipalJobs from './pages/CeipalJobs';
+import CandidateDatabase from './pages/CandidateDatabase';
+import OutlookJobs from './pages/OutlookJobs';
 
 function App() {
   return (
@@ -15,6 +20,11 @@ function App() {
             <Route path="/" element={<HomePage />} />
             <Route path="/ats-optimizer" element={<Dashboard />} />
             <Route path="/recruiter-flow" element={<RecruiterFlow />} />
+            <Route path="/recruiter-dashboard" element={<RecruiterDashboard />} />
+            <Route path="/ceipal-settings" element={<CeipalSettings />} />
+            <Route path="/ceipal-jobs" element={<CeipalJobs />} />
+            <Route path="/candidate-database" element={<CandidateDatabase />} />
+            <Route path="/outlook-jobs" element={<OutlookJobs />} />
           </Routes>
           <Toaster position="top-right" />
         </div>

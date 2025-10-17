@@ -1,0 +1,71 @@
+SARAH CHEN
+Senior Full Stack Developer
+
+Contact Information:
+Email: sarah.chen@email.com
+Phone: +1 (555) 123-4567
+Location: San Francisco, CA
+LinkedIn: linkedin.com/in/sarahchen
+
+PROFESSIONAL SUMMARY
+Highly skilled Full Stack Developer with 7+ years of experience building scalable web applications. Expert in React, Node.js, Python, and cloud technologies. Proven track record of leading development teams and delivering high-quality solutions.
+
+TECHNICAL SKILLS
+Languages: JavaScript, TypeScript, Python, Java, SQL
+Frontend: React, Next.js, Vue.js, Redux, HTML5, CSS3, Tailwind CSS
+Backend: Node.js, Express, Django, Flask, Spring Boot
+Databases: MongoDB, PostgreSQL, MySQL, Redis
+Cloud & DevOps: AWS (EC2, S3, Lambda), Docker, Kubernetes, CI/CD
+Tools: Git, Jest, Webpack, Jira, Agile/Scrum
+
+PROFESSIONAL EXPERIENCE
+
+Senior Full Stack Developer | TechCorp Inc | San Francisco, CA
+January 2020 - Present
+• Led a team of 5 developers in building a microservices-based e-commerce platform serving 500K+ users
+• Architected and implemented RESTful APIs using Node.js and Express, improving response time by 40%
+• Developed responsive React applications with TypeScript, reducing bug reports by 35%
+• Implemented AWS Lambda functions for serverless computing, reducing infrastructure costs by 25%
+• Mentored junior developers and conducted code reviews to maintain high code quality standards
+
+Full Stack Developer | StartupXYZ | San Francisco, CA
+June 2017 - December 2019
+• Developed and maintained full-stack web applications using MERN stack (MongoDB, Express, React, Node.js)
+• Created RESTful APIs and integrated third-party services (Stripe, SendGrid, Auth0)
+• Implemented automated testing with Jest and Cypress, achieving 85% code coverage
+• Collaborated with UX/UI designers to create intuitive and responsive user interfaces
+• Participated in agile development processes including sprint planning and daily stand-ups
+
+Junior Software Developer | WebSolutions Ltd | Palo Alto, CA
+July 2015 - May 2017
+• Built web applications using JavaScript, HTML, CSS, and jQuery
+• Worked with backend developers to integrate frontend components with APIs
+• Debugged and resolved technical issues in production environments
+• Contributed to codebase documentation and best practices
+
+EDUCATION
+Bachelor of Science in Computer Science
+Stanford University, Stanford, CA
+Graduated: May 2015
+GPA: 3.8/4.0
+
+CERTIFICATIONS
+• AWS Certified Solutions Architect - Associate
+• MongoDB Certified Developer
+• React Professional Certificate
+
+PROJECTS
+Real-Time Chat Application (2023)
+• Built a WebSocket-based chat application using React, Node.js, and Socket.io
+• Implemented user authentication, message encryption, and file sharing features
+• Deployed on AWS using Docker containers and managed with Kubernetes
+
+E-commerce Analytics Dashboard (2022)
+• Created data visualization dashboard using React, D3.js, and Python
+• Processed large datasets and implemented caching with Redis for improved performance
+• Integrated with Google Analytics API for real-time insights
+
+ADDITIONAL INFORMATION
+• Active contributor to open-source projects on GitHub (500+ stars)
+• Regular speaker at local tech meetups on modern web development
+• Passionate about clean code, test-driven development, and continuous learning

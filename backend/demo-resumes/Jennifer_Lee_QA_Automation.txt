@@ -1,0 +1,120 @@
+JENNIFER LEE
+QA Automation Engineer
+
+jennifer.lee@qatest.com | (555) 678-9012
+Location: New York, NY | LinkedIn: linkedin.com/in/jenniferlee
+
+PROFESSIONAL SUMMARY
+Detail-oriented QA Automation Engineer with 5 years of experience in test automation, quality assurance, and continuous integration. Expertise in building robust test frameworks and ensuring software quality through automated and manual testing strategies.
+
+TECHNICAL SKILLS
+
+Automation Tools & Frameworks:
+• Selenium WebDriver, Cypress, Playwright, TestNG, JUnit
+• Cucumber (BDD), Gherkin, SpecFlow
+• Appium (Mobile Testing), Rest Assured (API Testing)
+• Jest, Mocha, Chai (JavaScript Testing)
+
+Programming Languages:
+• Java, JavaScript, Python, TypeScript
+• SQL for database testing
+
+CI/CD & Version Control:
+• Jenkins, GitLab CI/CD, GitHub Actions
+• Git, GitHub, Bitbucket
+• Docker, Kubernetes basics
+
+Testing Tools:
+• JIRA, TestRail, Zephyr
+• Postman, SoapUI (API Testing)
+• BrowserStack, Sauce Labs (Cross-browser Testing)
+• Performance: JMeter, LoadRunner
+
+Methodologies:
+• Agile/Scrum, Test-Driven Development (TDD)
+• Behavior-Driven Development (BDD)
+• Continuous Testing, Shift-Left Testing
+
+PROFESSIONAL EXPERIENCE
+
+Senior QA Automation Engineer | FinTech Solutions | New York, NY
+January 2021 - Present
+• Lead automation efforts for web and mobile applications serving 1M+ users
+• Designed and implemented comprehensive test automation framework using Selenium and Java
+• Created 500+ automated test cases achieving 80% test coverage
+• Reduced regression testing time from 2 weeks to 2 days through automation
+• Implemented CI/CD pipeline integration with Jenkins for continuous testing
+• Conducted API testing using Rest Assured and Postman
+• Mentored 3 junior QA engineers on automation best practices
+• Performed load and performance testing using JMeter
+• Collaborated with developers to implement testable code and resolve defects
+
+QA Automation Engineer | E-Commerce Corp | Brooklyn, NY
+June 2019 - December 2020
+• Developed automated test scripts for e-commerce platform using Cypress and JavaScript
+• Created BDD test scenarios using Cucumber for better collaboration
+• Executed manual test cases for new features and regression testing
+• Maintained test automation framework and test data management
+• Performed cross-browser and cross-platform testing
+• Logged and tracked defects using JIRA with detailed reproduction steps
+• Participated in sprint planning, daily standups, and retrospectives
+• Improved test execution speed by 60% through parallel testing implementation
+
+QA Engineer | Web Solutions Inc | Manhattan, NY
+July 2018 - May 2019
+• Performed manual testing of web applications including functional, UI, and usability testing
+• Created detailed test plans, test cases, and test documentation
+• Executed smoke, sanity, and regression test suites
+• Reported and tracked bugs through resolution
+• Collaborated with development team during all phases of SDLC
+• Participated in requirement analysis and design reviews
+
+EDUCATION
+
+Bachelor of Science in Computer Science
+New York University | New York, NY
+Graduated: May 2018 | GPA: 3.6/4.0
+
+CERTIFICATIONS
+• ISTQB Certified Tester - Foundation Level (CTFL)
+• Certified Selenium Professional
+• AWS Certified Cloud Practitioner
+• Agile Testing Certification
+
+KEY PROJECTS
+
+E-Commerce Test Automation Framework (2022-2023)
+• Built comprehensive Selenium-based framework using Page Object Model
+• Integrated with Jenkins for continuous testing in CI/CD pipeline
+• Achieved 85% test automation coverage
+• Technologies: Selenium, Java, TestNG, Maven, Jenkins
+
+Mobile App Automation (2021)
+• Implemented mobile test automation using Appium for iOS and Android
+• Created 200+ automated test cases for mobile app
+• Reduced mobile testing cycle by 70%
+• Technologies: Appium, Java, TestNG
+
+API Test Automation Suite (2020)
+• Developed comprehensive API testing framework using Rest Assured
+• Automated 150+ API endpoints covering CRUD operations
+• Implemented data-driven testing approach
+• Technologies: Rest Assured, Java, JSON, Postman
+
+ACHIEVEMENTS
+• Increased automation coverage from 30% to 85% in 18 months
+• Reduced critical bugs in production by 60% through early detection
+• Won "Quality Champion Award" for outstanding contribution to QA (2022)
+• Presented "Test Automation Best Practices" at company tech talk
+
+TECHNICAL SKILLS HIGHLIGHTS
+• Strong analytical and problem-solving skills
+• Experience with Agile development methodologies
+• Excellent attention to detail and organizational skills
+• Ability to work independently and in team environment
+
+PROFESSIONAL DEVELOPMENT
+• Regular attendee of NYC Software Testing Meetup
+• Active member of Ministry of Testing community
+• Continuous learning through online courses (Udemy, Pluralsight)
+• Contributing to open-source test automation projects

@@ -1,0 +1,115 @@
+EMILY WONG
+DevOps Engineer / Cloud Architect
+
+emily.wong@cloudops.com | (555) 456-7890
+Denver, CO | LinkedIn: linkedin.com/in/emilywong
+
+SUMMARY
+Certified DevOps Engineer with 7 years of experience in cloud infrastructure, automation, and CI/CD pipelines. Expert in AWS, Kubernetes, and infrastructure as code. Proven track record of improving deployment efficiency and system reliability.
+
+CORE SKILLS
+
+Cloud Platforms:
+• AWS: EC2, S3, Lambda, RDS, ECS, EKS, CloudFormation, Route53, CloudWatch
+• Azure: VMs, AKS, Azure DevOps, ARM Templates
+• Google Cloud Platform: GCE, GKE, Cloud Functions
+
+DevOps & Automation:
+• Kubernetes, Docker, Helm, Container Orchestration
+• Terraform, Ansible, CloudFormation, Pulumi
+• Jenkins, GitLab CI/CD, GitHub Actions, CircleCI, ArgoCD
+• Bash, Python, Go scripting
+
+Monitoring & Logging:
+• Prometheus, Grafana, ELK Stack (Elasticsearch, Logstash, Kibana)
+• Datadog, New Relic, Splunk
+• CloudWatch, Azure Monitor
+
+Security & Compliance:
+• IAM, Security Groups, Network ACLs
+• Vault, Secrets Management
+• SSL/TLS, VPN, Firewall Configuration
+• SOC2, HIPAA, PCI-DSS Compliance
+
+PROFESSIONAL EXPERIENCE
+
+Senior DevOps Engineer | CloudScale Technologies | Denver, CO
+January 2020 - Present
+• Architected and managed AWS infrastructure serving 500K+ users across multiple regions
+• Designed and implemented Kubernetes clusters reducing deployment time by 70%
+• Built comprehensive CI/CD pipelines using GitLab CI and ArgoCD for 50+ microservices
+• Implemented Infrastructure as Code using Terraform managing 200+ AWS resources
+• Reduced AWS costs by 40% through rightsizing, reserved instances, and spot instances
+• Established monitoring and alerting systems achieving 99.95% uptime SLA
+• Led disaster recovery planning and executed successful DR drills
+• Mentored team of 4 junior DevOps engineers on best practices
+
+DevOps Engineer | TechOps Solutions | Boulder, CO
+March 2018 - December 2019
+• Migrated legacy applications to containerized microservices on Kubernetes
+• Automated infrastructure provisioning reducing setup time from days to hours
+• Implemented centralized logging using ELK stack processing 1TB+ logs daily
+• Created monitoring dashboards and alerts using Prometheus and Grafana
+• Managed multi-environment deployments (dev, staging, production)
+• Improved deployment frequency from monthly to daily releases
+• Participated in on-call rotation and incident response
+
+System Administrator | DataCenter Corp | Colorado Springs, CO
+June 2016 - February 2018
+• Managed Linux servers (Ubuntu, CentOS, RedHat) and Windows Server environments
+• Automated routine tasks using Bash and Python scripts
+• Maintained database servers (MySQL, PostgreSQL, MongoDB)
+• Performed system upgrades, patching, and security hardening
+• Documented infrastructure and created runbooks for common operations
+
+EDUCATION
+
+Bachelor of Science in Computer Science
+Colorado State University | Fort Collins, CO
+Graduated: May 2016 | GPA: 3.6/4.0
+
+PROFESSIONAL CERTIFICATIONS
+• AWS Certified Solutions Architect - Professional
+• AWS Certified DevOps Engineer - Professional
+• Certified Kubernetes Administrator (CKA)
+• Certified Kubernetes Application Developer (CKAD)
+• HashiCorp Certified: Terraform Associate
+• Microsoft Certified: Azure Administrator
+
+MAJOR PROJECTS
+
+Multi-Region High-Availability Infrastructure (2023)
+• Designed fault-tolerant architecture across 3 AWS regions
+• Implemented auto-scaling, load balancing, and failover mechanisms
+• Achieved 99.99% uptime for mission-critical applications
+• Technologies: AWS, Terraform, Kubernetes, Route53
+
+CI/CD Pipeline Modernization (2022)
+• Migrated from Jenkins to GitLab CI/CD with automated testing
+• Implemented blue-green and canary deployment strategies
+• Reduced deployment failures by 85% through automated rollback
+• Technologies: GitLab CI, Kubernetes, Helm, ArgoCD
+
+Observability Platform Implementation (2021)
+• Built centralized monitoring for 100+ services and applications
+• Created custom dashboards and alerts for SRE team
+• Reduced mean time to resolution (MTTR) by 60%
+• Technologies: Prometheus, Grafana, ELK, Datadog
+
+TECHNICAL ACHIEVEMENTS
+• Reduced infrastructure costs by $500K annually through optimization
+• Improved deployment speed by 10x through automation
+• Decreased incident response time from 2 hours to 15 minutes
+• Maintained zero data loss during major infrastructure migrations
+
+COMMUNITY & LEADERSHIP
+• Organizer of Denver DevOps Meetup (300+ members)
+• Speaker at KubeCon North America 2023
+• Contributing author to CNCF blog on Kubernetes best practices
+• Active mentor in DevOps mentorship program
+
+ADDITIONAL INFORMATION
+• Strong problem-solving and troubleshooting skills
+• Experience with Agile/Scrum methodologies
+• Excellent communication and collaboration abilities
+• Passionate about automation, reliability, and continuous improvement

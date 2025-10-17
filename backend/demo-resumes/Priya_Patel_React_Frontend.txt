@@ -1,0 +1,94 @@
+PRIYA PATEL
+Frontend Developer - React Specialist
+
+Email: priya.patel@devmail.com
+Phone: (555) 234-5678
+Location: Seattle, WA
+Portfolio: priyapatel.dev | GitHub: github.com/priyapatel
+
+PROFESSIONAL SUMMARY
+Creative and detail-oriented Frontend Developer with 5 years of experience specializing in React ecosystem. Passionate about building beautiful, accessible, and performant user interfaces. Strong focus on user experience and modern web technologies.
+
+TECHNICAL SKILLS
+Frontend Technologies:
+• React.js, Next.js, React Native, Redux, Context API, React Query
+• JavaScript (ES6+), TypeScript, HTML5, CSS3, SASS/SCSS
+• Tailwind CSS, Material-UI, Styled Components, Chakra UI
+• Webpack, Vite, Babel, npm, yarn
+
+Testing & Quality:
+• Jest, React Testing Library, Cypress, Enzyme
+• ESLint, Prettier, Husky, Git Hooks
+
+Tools & Platforms:
+• Git, GitHub, GitLab, Figma, Adobe XD
+• Vercel, Netlify, AWS S3, CloudFront
+• Jira, Confluence, Slack
+
+WORK EXPERIENCE
+
+Senior Frontend Developer | CloudTech Solutions | Seattle, WA
+August 2021 - Present
+• Lead frontend development for SaaS dashboard serving 50,000+ daily active users
+• Architected and implemented component library using React and TypeScript, reducing development time by 40%
+• Improved application performance by 65% through code splitting, lazy loading, and optimization techniques
+• Implemented responsive designs ensuring seamless experience across all devices
+• Collaborated with UX designers to implement pixel-perfect designs with accessibility compliance (WCAG 2.1)
+• Mentored 3 junior developers on React best practices and modern frontend architecture
+
+Frontend Developer | StartupHub | San Francisco, CA
+June 2019 - July 2021
+• Developed multiple React-based web applications for e-commerce and fintech clients
+• Built reusable component library resulting in 50% faster feature development
+• Implemented state management using Redux and Redux Toolkit for complex applications
+• Integrated RESTful APIs and GraphQL endpoints for data fetching
+• Optimized bundle size reducing initial load time from 5s to 1.2s
+• Created comprehensive unit and integration tests achieving 85% code coverage
+
+Junior Frontend Developer | WebDesign Pro | Portland, OR
+July 2018 - May 2019
+• Converted design mockups to responsive React components
+• Worked on bug fixes and feature enhancements for client projects
+• Learned and applied modern JavaScript frameworks and libraries
+• Participated in agile development process and daily standups
+
+EDUCATION
+Bachelor of Science in Computer Engineering
+University of Washington | Seattle, WA
+Graduated: June 2018 | GPA: 3.7/4.0
+
+CERTIFICATIONS & TRAINING
+• Meta Front-End Developer Professional Certificate (2023)
+• Advanced React Patterns Course - Kent C. Dodds (2022)
+• TypeScript Deep Dive Certification (2021)
+
+KEY PROJECTS
+
+E-Commerce Platform (2023)
+• Built complete e-commerce frontend using Next.js 13 with App Router
+• Implemented server-side rendering for SEO optimization
+• Integrated Stripe payment gateway and shopping cart functionality
+• Technologies: Next.js, TypeScript, Tailwind CSS, Stripe API
+
+Social Media Dashboard (2022)
+• Created analytics dashboard with real-time data visualization
+• Used React Query for efficient data fetching and caching
+• Implemented dark mode and accessibility features
+• Technologies: React, D3.js, Chart.js, Material-UI
+
+Mobile App - React Native (2021)
+• Developed cross-platform mobile app for fitness tracking
+• Implemented offline-first architecture using AsyncStorage
+• Integrated device sensors and push notifications
+• Technologies: React Native, Expo, Firebase
+
+ACHIEVEMENTS
+• Improved Core Web Vitals scores to 95+ across all metrics
+• Reduced JavaScript bundle size by 60% through tree-shaking and code splitting
+• Increased mobile conversion rate by 35% through UX improvements
+• Won "Best UI/UX Implementation" award at company hackathon 2022
+
+COMMUNITY INVOLVEMENT
+• Active member of ReactJS Seattle Meetup Group
+• Regular contributor to Dev.to and Medium on React topics
+• Volunteer coding instructor for Women Who Code Seattle chapter

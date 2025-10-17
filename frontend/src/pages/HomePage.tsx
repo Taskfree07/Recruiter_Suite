@@ -26,17 +26,17 @@ const HomePage: React.FC = () => {
     },
     {
       title: 'Recruiter Flow',
-      description: 'Streamline your recruitment process with advanced candidate management, interview scheduling, and hiring pipeline tracking.',
+      description: 'Automatically organize resumes from emails/folders by skills. Smart categorization for Java, Python, React, and 100+ technologies.',
       icon: UserGroupIcon,
-      path: '/recruiter-flow',
+      path: '/recruiter-dashboard',
       color: 'from-green-500 to-teal-600',
       highlights: [
-        'Candidate Pipeline',
-        'Interview Scheduling',
-        'Team Collaboration',
-        'Hiring Analytics'
+        'Auto Skill Detection',
+        'Email/Folder Import',
+        'Smart Categorization',
+        'Candidate Scoring'
       ],
-      badge: 'Coming Soon'
+      badge: 'Beta'
     }
   ];
 
@@ -90,7 +90,11 @@ const HomePage: React.FC = () => {
                 {/* Badge */}
                 {feature.badge && (
                   <div className="absolute top-4 right-4 z-10">
-                    <span className="px-3 py-1 bg-yellow-100 text-yellow-800 text-xs font-semibold rounded-full">
+                    <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
+                      feature.badge === 'Beta'
+                        ? 'bg-green-100 text-green-800'
+                        : 'bg-yellow-100 text-yellow-800'
+                    }`}>
                       {feature.badge}
                     </span>
                   </div>
@@ -129,14 +133,9 @@ const HomePage: React.FC = () => {
                   {/* Button */}
                   <button
                     onClick={() => navigate(feature.path)}
-                    disabled={!!feature.badge}
-                    className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 ${
-                      feature.badge
-                        ? 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                        : `bg-gradient-to-r ${feature.color} text-white hover:shadow-lg hover:scale-105`
-                    }`}
+                    className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 bg-gradient-to-r ${feature.color} text-white hover:shadow-lg hover:scale-105`}
                   >
-                    {feature.badge ? 'Coming Soon' : `Launch ${feature.title}`}
+                    {feature.badge === 'Beta' ? `Try ${feature.title} (Beta)` : `Launch ${feature.title}`}
                   </button>
                 </div>
               </div>

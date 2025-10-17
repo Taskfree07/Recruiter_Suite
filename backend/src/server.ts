@@ -5,8 +5,8 @@ import mongoose from 'mongoose';
 import fileUpload from 'express-fileupload';
 import path from 'path';
 
-// Load environment variables
-dotenv.config();
+// Load environment variables from parent directory
+dotenv.config({ path: path.join(__dirname, '../../.env') });
 
 // Import routes
 import jobRoutes from './routes/jobRoutes';
@@ -14,7 +14,14 @@ import candidateRoutes from './routes/candidateRoutes';
 import scoringRoutes from './routes/scoringRoutes';
 import candidateScoringRoutes from './routes/candidateScoringRoutes';
 import candidateResumesRoutes from './routes/candidateResumes';
-import fileRoutes from './routes/fileRoutes';
+import recruiterRoutes from './routes/recruiterRoutesSimple';
+import ceipalRoutes from './routes/ceipalRoutes';
+import aiRoutes from './routes/aiRoutes';
+import outlookRoutes from './routes/outlookRoutes';
+
+console.log('About to import matching routes...');
+import matchingRoutes from './routes/matchingRoutes';
+console.log('Matching routes imported successfully:', typeof matchingRoutes);
 const app: Application = express();
 
 // Middleware
@@ -114,6 +121,13 @@ app.use('/api/candidates', candidateRoutes);
 app.use('/api/scoring', scoringRoutes);
 app.use('/api/candidate-scoring', candidateScoringRoutes);
 app.use('/api/candidate-resumes', candidateResumesRoutes);
+app.use('/api/recruiter', recruiterRoutes);
+app.use('/api/ceipal', ceipalRoutes);
+app.use('/api/ai', aiRoutes);
+app.use('/api/outlook', outlookRoutes);
+console.log('Registering matching routes at /api/matching');
+app.use('/api/matching', matchingRoutes);
+console.log('Matching routes registered successfully');
 
 // Error handling middleware
 app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {

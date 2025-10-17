@@ -1,0 +1,106 @@
+ALEX KUMAR
+Junior Full Stack Developer
+
+Email: alex.kumar@gmail.com
+Phone: (555) 567-8901
+Location: Chicago, IL
+Portfolio: alexkumar.dev | GitHub: github.com/alexkumar
+
+OBJECTIVE
+Motivated and enthusiastic Junior Full Stack Developer with 2 years of experience seeking to leverage programming skills and passion for technology in a challenging development role. Quick learner with strong problem-solving abilities.
+
+TECHNICAL SKILLS
+
+Frontend:
+• JavaScript (ES6), HTML5, CSS3
+• React.js, Bootstrap, jQuery
+• Responsive Web Design
+
+Backend:
+• Node.js, Express.js
+• Python, Flask
+• RESTful API Development
+
+Databases:
+• MySQL, MongoDB
+• Basic SQL queries
+
+Tools & Technologies:
+• Git, GitHub
+• VS Code, Postman
+• npm, Webpack
+
+PROFESSIONAL EXPERIENCE
+
+Junior Developer | WebDev Agency | Chicago, IL
+August 2022 - Present
+• Develop and maintain websites for small business clients using HTML, CSS, and JavaScript
+• Built responsive landing pages resulting in 25% increase in client conversions
+• Collaborate with senior developers to implement new features and fix bugs
+• Participate in code reviews and daily stand-up meetings
+• Created reusable components in React for company's internal projects
+• Assist in testing and debugging applications before deployment
+
+Web Development Intern | TechStart Inc | Chicago, IL
+May 2022 - July 2022
+• Assisted in developing web applications using MERN stack
+• Fixed bugs and implemented minor features under supervision
+• Learned version control with Git and collaborative development workflow
+• Participated in agile development process and sprint planning
+• Documented code and created user guides
+
+EDUCATION
+
+Bachelor of Science in Information Technology
+University of Illinois at Chicago
+Graduated: May 2022 | GPA: 3.5/4.0
+
+Relevant Coursework:
+• Web Development
+• Database Management Systems
+• Data Structures and Algorithms
+• Object-Oriented Programming
+• Software Engineering
+
+PROJECTS
+
+Personal Portfolio Website (2023)
+• Designed and developed personal portfolio using React and CSS
+• Implemented contact form with email integration
+• Deployed on Vercel with custom domain
+• Technologies: React, CSS3, EmailJS
+
+Task Management App (2022)
+• Created full-stack todo application with CRUD operations
+• Implemented user authentication and data persistence
+• Responsive design for mobile and desktop
+• Technologies: React, Node.js, Express, MongoDB
+
+Restaurant Website (2021)
+• Built responsive website for local restaurant
+• Integrated online menu and contact form
+• Improved site loading speed by 40%
+• Technologies: HTML5, CSS3, JavaScript, Bootstrap
+
+CERTIFICATIONS
+• freeCodeCamp Responsive Web Design Certification (2022)
+• JavaScript Algorithms and Data Structures - freeCodeCamp (2021)
+• The Complete Web Developer Bootcamp - Udemy (2021)
+
+TECHNICAL ACHIEVEMENTS
+• Completed 100+ coding challenges on LeetCode
+• Built 10+ personal projects available on GitHub
+• Regular participant in local coding meetups
+
+ADDITIONAL SKILLS
+• Strong communication and teamwork abilities
+• Eager to learn new technologies and frameworks
+• Basic understanding of Agile/Scrum methodologies
+• Familiar with UI/UX principles
+• Time management and organizational skills
+
+INTERESTS
+• Open source contribution
+• Hackathons and coding competitions
+• Tech blogging and knowledge sharing
+• Continuous learning through online courses
