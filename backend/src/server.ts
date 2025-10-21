@@ -18,6 +18,7 @@ import recruiterRoutes from './routes/recruiterRoutesSimple';
 import ceipalRoutes from './routes/ceipalRoutes';
 import aiRoutes from './routes/aiRoutes';
 import outlookRoutes from './routes/outlookRoutes';
+import jobPipelineRoutes from './routes/jobPipelineRoutes';
 
 console.log('About to import matching routes...');
 import matchingRoutes from './routes/matchingRoutes';
@@ -125,6 +126,7 @@ app.use('/api/recruiter', recruiterRoutes);
 app.use('/api/ceipal', ceipalRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/outlook', outlookRoutes);
+app.use('/api/job-pipeline', jobPipelineRoutes);
 console.log('Registering matching routes at /api/matching');
 app.use('/api/matching', matchingRoutes);
 console.log('Matching routes registered successfully');

@@ -239,7 +239,7 @@ const OutlookJobs: React.FC = () => {
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-4">
             <button
-              onClick={() => navigate('/recruiter-dashboard')}
+              onClick={() => navigate('/resume-dashboard')}
               className="flex items-center space-x-2 px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200"
             >
               <ArrowLeftIcon className="h-5 w-5" />
@@ -266,7 +266,7 @@ const OutlookJobs: React.FC = () => {
               Sync your Outlook emails to see job descriptions here.
             </p>
             <button
-              onClick={() => navigate('/recruiter-dashboard')}
+              onClick={() => navigate('/resume-dashboard')}
               className="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
             >
               Go to Dashboard

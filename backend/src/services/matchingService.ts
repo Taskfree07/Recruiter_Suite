@@ -1,6 +1,7 @@
 // Don't import models at top level to avoid circular dependencies
 // import UnifiedJob from '../models/unifiedJob';
 // import RecruiterResume from '../models/recruiterResume';
+import aiMatchingClient from './aiMatchingClient';
 
 interface MatchScore {
   overall: number;
@@ -9,6 +10,7 @@ interface MatchScore {
     experienceMatch: number;
     locationMatch: number;
     salaryMatch: number;
+    semanticMatch?: number; // AI-powered semantic match score
   };
   matchedSkills: string[];
   missingSkills: string[];
@@ -19,6 +21,8 @@ interface MatchScore {
     experienceStatus: string;
     locationCompatible: boolean;
     salaryAlignment: string;
+    aiEnhanced?: boolean; // Indicates if AI matching was used
+    semanticSimilarity?: number; // Raw semantic similarity score
   };
 }
 
@@ -84,7 +88,8 @@ class MatchingService {
    * Calculate match score between a job and candidate
    */
   calculateMatchScore(job: any, candidate: any): MatchScore {
-    // Skill matching (40 points)
+    // Traditional matching (keyword-based)
+    // Skill matching (35 points) - reduced from 40 to make room for AI
     const skillScore = this.calculateSkillScore(job, candidate);
 
     // Experience matching (30 points)
@@ -96,12 +101,17 @@ class MatchingService {
     // Salary matching (15 points)
     const salaryScore = this.calculateSalaryScore(job, candidate);
 
+    // Semantic AI matching (20 points) - new addition
+    // This will be populated asynchronously, so we'll return a basic score for now
+    const semanticScore = 0;
+
     // Calculate overall score
     const overall =
       skillScore.score +
       experienceScore.score +
       locationScore.score +
-      salaryScore.score;
+      salaryScore.score +
+      semanticScore;
 
     return {
       overall: Math.round(overall),
@@ -109,7 +119,8 @@ class MatchingService {
         skillMatch: skillScore.score,
         experienceMatch: experienceScore.score,
         locationMatch: locationScore.score,
-        salaryMatch: salaryScore.score
+        salaryMatch: salaryScore.score,
+        semanticMatch: semanticScore
       },
       matchedSkills: skillScore.matchedSkills,
       missingSkills: skillScore.missingSkills,
@@ -119,13 +130,114 @@ class MatchingService {
         skillMatchRate: skillScore.matchRate,
         experienceStatus: experienceScore.status,
         locationCompatible: locationScore.compatible,
-        salaryAlignment: salaryScore.alignment
+        salaryAlignment: salaryScore.alignment,
+        aiEnhanced: false
       }
     };
   }
 
   /**
-   * Calculate skill matching score (40 points max)
+   * Calculate AI-enhanced match score between a job and candidate
+   * This method uses Sentence Transformers for semantic similarity
+   */
+  async calculateAIMatchScore(job: any, candidate: any): Promise<MatchScore> {
+    // Get traditional score first
+    const baseScore = this.calculateMatchScore(job, candidate);
+
+    // Try to enhance with AI matching
+    try {
+      if (!aiMatchingClient.isServiceAvailable()) {
+        console.log('AI service not available, using traditional matching only');
+        return baseScore;
+      }
+
+      // Prepare job description text
+      const jobDescription = `
+        ${job.title} at ${job.company}
+        ${job.description}
+        Required Skills: ${job.requiredSkills?.join(', ') || 'N/A'}
+        Experience: ${job.experienceYears?.min || 0}-${job.experienceYears?.max || 10} years
+        Location: ${job.location} (${job.locationType})
+      `.trim();
+
+      // Prepare candidate resume text
+      const resumeText = candidate.rawText || this.extractCandidateText(candidate);
+
+      // Get all candidate skills
+      const candidateSkills = [
+        ...(candidate.skills?.primary || []),
+        ...(candidate.skills?.secondary || []),
+        ...(candidate.skills?.frameworks || []),
+        ...(candidate.skills?.databases || []),
+        ...(candidate.skills?.cloudPlatforms || []),
+        ...(candidate.skills?.tools || [])
+      ];
+
+      // Call AI matching service
+      const aiResult = await aiMatchingClient.matchCandidate(
+        jobDescription,
+        resumeText,
+        job.requiredSkills || [],
+        candidateSkills
+      );
+
+      if (aiResult) {
+        // Add semantic score (max 20 points)
+        const semanticScore = Math.round((aiResult.weighted_score_percentage / 100) * 20);
+
+        // Recalculate overall with AI boost
+        const overall =
+          baseScore.breakdown.skillMatch +
+          baseScore.breakdown.experienceMatch +
+          baseScore.breakdown.locationMatch +
+          baseScore.breakdown.salaryMatch +
+          semanticScore;
+
+        return {
+          ...baseScore,
+          overall: Math.round(overall),
+          breakdown: {
+            ...baseScore.breakdown,
+            semanticMatch: semanticScore
+          },
+          details: {
+            ...baseScore.details,
+            aiEnhanced: true,
+            semanticSimilarity: aiResult.overall_similarity_percentage
+          },
+          recommendation: this.getRecommendation(overall)
+        };
+      }
+    } catch (error) {
+      console.error('Error in AI matching, falling back to traditional:', error);
+    }
+
+    // Return base score if AI fails
+    return baseScore;
+  }
+
+  /**
+   * Extract readable text from candidate object
+   */
+  private extractCandidateText(candidate: any): string {
+    const parts = [
+      candidate.name || '',
+      candidate.personalInfo?.email || '',
+      candidate.professionalDetails?.headline || '',
+      candidate.professionalDetails?.summary || '',
+      ...(candidate.experiences || []).map((exp: any) =>
+        `${exp.title} at ${exp.company}: ${exp.description || ''}`
+      ),
+      ...(candidate.education || []).map((edu: any) =>
+        `${edu.degree} in ${edu.field} from ${edu.institution}`
+      )
+    ];
+
+    return parts.filter(p => p).join('\n');
+  }
+
+  /**
+   * Calculate skill matching score (35 points max - reduced to make room for AI)
    */
   private calculateSkillScore(job: any, candidate: any): any {
     const requiredSkills = job.requiredSkills || [];
@@ -161,7 +273,7 @@ class MatchingService {
     const matchRate = requiredSkills.length > 0
       ? matchedSkills.length / requiredSkills.length
       : 0;
-    let score = matchRate * 35; // Max 35 points for required skills
+    let score = matchRate * 30; // Max 30 points for required skills
 
     // Bonus: Nice-to-have skills (+5 points max)
     const niceToHaveMatched = niceToHaveSkills.filter((skill: string) =>

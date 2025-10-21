@@ -4,7 +4,8 @@ import {
   DocumentMagnifyingGlassIcon,
   UserGroupIcon,
   SparklesIcon,
-  ChartBarIcon
+  ChartBarIcon,
+  BriefcaseIcon
 } from '@heroicons/react/24/outline';
 
 const HomePage: React.FC = () => {
@@ -25,18 +26,31 @@ const HomePage: React.FC = () => {
       ]
     },
     {
-      title: 'Recruiter Flow',
+      title: 'Resume Dashboard',
       description: 'Automatically organize resumes from emails/folders by skills. Smart categorization for Java, Python, React, and 100+ technologies.',
       icon: UserGroupIcon,
-      path: '/recruiter-dashboard',
+      path: '/resume-dashboard',
       color: 'from-green-500 to-teal-600',
       highlights: [
         'Auto Skill Detection',
         'Email/Folder Import',
         'Smart Categorization',
         'Candidate Scoring'
+      ]
+    },
+    {
+      title: 'Job Pipeline',
+      description: 'Unified job management from Outlook, Ceipal, and all sources. AI-powered semantic matching finds the best candidates using Sentence Transformers.',
+      icon: BriefcaseIcon,
+      path: '/job-pipeline',
+      color: 'from-blue-500 to-cyan-600',
+      highlights: [
+        'AI Semantic Matching',
+        'Multi-Source Jobs',
+        'Smart Filtering',
+        'Candidate Tracking'
       ],
-      badge: 'Beta'
+      badge: 'New'
     }
   ];
 
@@ -79,7 +93,7 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* Feature Cards */}
-        <div className="grid md:grid-cols-2 gap-8 mb-12">
+        <div className="grid md:grid-cols-3 gap-8 mb-12">
           {features.map((feature) => {
             const IconComponent = feature.icon;
             return (
@@ -91,7 +105,9 @@ const HomePage: React.FC = () => {
                 {feature.badge && (
                   <div className="absolute top-4 right-4 z-10">
                     <span className={`px-3 py-1 text-xs font-semibold rounded-full ${
-                      feature.badge === 'Beta'
+                      feature.badge === 'New'
+                        ? 'bg-blue-100 text-blue-800'
+                        : feature.badge === 'Beta'
                         ? 'bg-green-100 text-green-800'
                         : 'bg-yellow-100 text-yellow-800'
                     }`}>
@@ -135,7 +151,7 @@ const HomePage: React.FC = () => {
                     onClick={() => navigate(feature.path)}
                     className={`w-full py-3 px-6 rounded-lg font-semibold transition-all duration-200 bg-gradient-to-r ${feature.color} text-white hover:shadow-lg hover:scale-105`}
                   >
-                    {feature.badge === 'Beta' ? `Try ${feature.title} (Beta)` : `Launch ${feature.title}`}
+                    {feature.badge ? `Launch ${feature.title}` : `Launch ${feature.title}`}
                   </button>
                 </div>
               </div>

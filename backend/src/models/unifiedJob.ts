@@ -55,7 +55,27 @@ export interface IUnifiedJob extends Document {
 
   // Additional
   tags: string[];
-  notes?: string;
+  notes?: Array<{
+    text: string;
+    createdAt: Date;
+  }>;
+
+  // Submissions tracking
+  submissions?: Array<{
+    candidateId: mongoose.Types.ObjectId;
+    candidateName: string;
+    submittedAt: Date;
+    status: string;
+    matchScore: number;
+    notes?: string;
+  }>;
+
+  // Archive
+  archived?: boolean;
+  archivedAt?: Date;
+
+  // Computed field for source type (primary source)
+  source?: string;
 
   createdAt: Date;
   updatedAt: Date;
@@ -166,7 +186,35 @@ const unifiedJobSchema = new Schema<IUnifiedJob>(
 
     // Additional
     tags: [String],
-    notes: String
+    notes: [
+      {
+        text: String,
+        createdAt: { type: Date, default: Date.now }
+      }
+    ],
+
+    // Submissions tracking
+    submissions: [
+      {
+        candidateId: { type: Schema.Types.ObjectId, ref: 'RecruiterResume' },
+        candidateName: String,
+        submittedAt: { type: Date, default: Date.now },
+        status: {
+          type: String,
+          enum: ['submitted', 'screening', 'interviewing', 'offered', 'rejected', 'accepted'],
+          default: 'submitted'
+        },
+        matchScore: Number,
+        notes: String
+      }
+    ],
+
+    // Archive
+    archived: { type: Boolean, default: false },
+    archivedAt: Date,
+
+    // Computed field for source type (primary source)
+    source: String
   },
   {
     timestamps: true
@@ -179,5 +227,16 @@ unifiedJobSchema.index({ postedDate: -1 });
 unifiedJobSchema.index({ 'sources.type': 1 });
 unifiedJobSchema.index({ 'sources.id': 1 });
 unifiedJobSchema.index({ requiredSkills: 1 });
+unifiedJobSchema.index({ archived: 1 });
+unifiedJobSchema.index({ source: 1 });
+
+// Virtual to compute primary source
+unifiedJobSchema.pre('save', function(next) {
+  if (this.sources && this.sources.length > 0) {
+    // Set primary source to the first source type
+    this.source = this.sources[0].type;
+  }
+  next();
+});
 
 export default mongoose.model<IUnifiedJob>('UnifiedJob', unifiedJobSchema);
