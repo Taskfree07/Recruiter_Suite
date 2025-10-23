@@ -58,11 +58,12 @@ class MatchingService {
         processed: true
       }).select('-rawText'); // Exclude large text fields for performance
 
-      // Calculate match score for each candidate
+      // Calculate match score for each candidate using AI
       const matchedCandidates: MatchResult[] = [];
 
       for (const candidate of candidates) {
-        const matchScore = this.calculateMatchScore(job, candidate);
+        // Use AI-enhanced matching for better accuracy
+        const matchScore = await this.calculateAIMatchScore(job, candidate);
 
         // Only include if meets minimum score
         if (matchScore.overall >= minScore) {
@@ -221,16 +222,22 @@ class MatchingService {
    */
   private extractCandidateText(candidate: any): string {
     const parts = [
-      candidate.name || '',
+      candidate.personalInfo?.name || '',
       candidate.personalInfo?.email || '',
       candidate.professionalDetails?.headline || '',
       candidate.professionalDetails?.summary || '',
-      ...(candidate.experiences || []).map((exp: any) =>
+      ...(candidate.experience || []).map((exp: any) =>
         `${exp.title} at ${exp.company}: ${exp.description || ''}`
       ),
       ...(candidate.education || []).map((edu: any) =>
-        `${edu.degree} in ${edu.field} from ${edu.institution}`
-      )
+        `${edu.degree} from ${edu.institution}`
+      ),
+      // Add skills to text
+      `Skills: ${[
+        ...(candidate.skills?.primary || []),
+        ...(candidate.skills?.secondary || []),
+        ...(candidate.skills?.frameworks || [])
+      ].join(', ')}`
     ];
 
     return parts.filter(p => p).join('\n');

@@ -23,7 +23,15 @@
       "Bash(node:*)",
       "Bash(cat:*)",
       "Bash(if exist dist rmdir /s /q dist)",
-      "Bash(npm run build:*)"
+      "Bash(npm run build:*)",
+      "Bash(del:*)",
+      "Read(//c/Users/Adil Akhtar/OneDrive/Pictures/Screenshots/**)",
+      "Bash(dir:*)",
+      "Bash(venv/Scripts/pip install:*)",
+      "Bash(mongo:*)",
+      "Bash(venv/Scripts/python:*)",
+      "WebFetch(domain:vendor.ilabor360.com)",
+      "Bash(copy direct_scraper.py direct_scraper_backup.py)"
     ],
     "deny": [],
     "ask": []

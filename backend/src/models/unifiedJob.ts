@@ -132,7 +132,7 @@ const unifiedJobSchema = new Schema<IUnifiedJob>(
       {
         type: {
           type: String,
-          enum: ['ceipal', 'outlook', 'manual'],
+          enum: ['ceipal', 'outlook', 'manual', 'ilabor360'],
           required: true
         },
         id: String,

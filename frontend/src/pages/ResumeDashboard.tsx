@@ -6,10 +6,10 @@ import {
   FunnelIcon,
   MagnifyingGlassIcon,
   CloudArrowUpIcon,
-  EnvelopeIcon,
   CheckCircleIcon,
   ArrowPathIcon,
   BriefcaseIcon,
+  EnvelopeIcon,
   DocumentTextIcon,
   UserGroupIcon,
   ChartBarIcon,
@@ -90,34 +90,14 @@ const ResumeDashboard: React.FC = () => {
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [uploadingFiles, setUploadingFiles] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [outlookConnected, setOutlookConnected] = useState(false);
-  const [outlookEmail, setOutlookEmail] = useState<string | null>(null);
-  const [syncing, setSyncing] = useState(false);
-  const [isDemoMode, setIsDemoMode] = useState(false);
-  const [isDemoAvailable, setIsDemoAvailable] = useState(false);
   const [ceipalConnected, setCeipalConnected] = useState(false);
   const [ceipalSyncing, setCeipalSyncing] = useState(false);
 
-  // Fetch dashboard stats and Outlook status
+  // Fetch dashboard stats and integration status
   useEffect(() => {
     fetchStats();
     fetchCategories();
-    checkOutlookStatus();
     checkCeipalStatus();
-
-    // Check for OAuth callback params
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('outlook_connected') === 'true') {
-      const email = urlParams.get('email');
-      alert(`✅ Outlook connected successfully!\n\nAccount: ${email}\n\nYou can now sync emails automatically.`);
-      setOutlookConnected(true);
-      setOutlookEmail(email);
-      // Clean up URL
-      window.history.replaceState({}, '', '/resume-dashboard');
-    } else if (urlParams.get('outlook_error')) {
-      alert('❌ Failed to connect Outlook. Please try again.');
-      window.history.replaceState({}, '', '/resume-dashboard');
-    }
   }, []);
 
   // Fetch resumes when filters change
@@ -224,128 +204,6 @@ const ResumeDashboard: React.FC = () => {
     }
   };
 
-  const checkOutlookStatus = async () => {
-    try {
-      const response = await axios.get(`${API_URL}/outlook/status`);
-      if (response.data.connected) {
-        setOutlookConnected(true);
-        setOutlookEmail(response.data.emailAddress);
-        setIsDemoMode(response.data.isDemo || false);
-      }
-      setIsDemoAvailable(response.data.isDemoAvailable || false);
-    } catch (error) {
-      console.error('Error checking Outlook status:', error);
-    }
-  };
-
-  const handleConnectOutlook = async () => {
-    // If Azure AD is not configured, offer demo mode
-    if (isDemoAvailable) {
-      const useDemo = window.confirm(
-        '🎭 Demo Mode Available\n\n' +
-        'Azure AD credentials are not configured.\n\n' +
-        'Click OK to try Demo Mode (simulated emails with AI parsing)\n' +
-        'Click Cancel to set up real Outlook integration first'
-      );
-
-      if (useDemo) {
-        await handleConnectDemo();
-        return;
-      } else {
-        alert(
-          'To connect real Outlook:\n\n' +
-          '1. Set up Azure AD app (see OUTLOOK_INTEGRATION_SETUP.md)\n' +
-          '2. Add OUTLOOK_CLIENT_ID and OUTLOOK_CLIENT_SECRET to .env\n' +
-          '3. Restart backend server\n' +
-          '4. Try connecting again'
-        );
-        return;
-      }
-    }
-
-    try {
-      const response = await axios.get(`${API_URL}/outlook/auth-url`);
-      if (response.data.success) {
-        // Redirect to Microsoft OAuth page
-        window.location.href = response.data.authUrl;
-      }
-    } catch (error: any) {
-      console.error('Error connecting Outlook:', error);
-      alert('Failed to connect Outlook. Please check your configuration.');
-    }
-  };
-
-  const handleConnectDemo = async () => {
-    try {
-      const response = await axios.post(`${API_URL}/outlook/connect-demo`, {
-        emailAddress: 'demo@outlook.com'
-      });
-
-      if (response.data.success) {
-        alert(
-          '🎭 Demo Mode Connected!\n\n' +
-          `Email: ${response.data.emailAddress}\n\n` +
-          'You can now sync demo emails with realistic job descriptions.\n' +
-          'No Azure AD setup required!'
-        );
-        setOutlookConnected(true);
-        setOutlookEmail(response.data.emailAddress);
-        setIsDemoMode(true);
-        fetchStats();
-      }
-    } catch (error: any) {
-      console.error('Error connecting demo:', error);
-      alert('Failed to connect in demo mode.');
-    }
-  };
-
-  const handleSyncOutlook = async () => {
-    if (!outlookConnected) {
-      alert('Please connect your Outlook account first.');
-      return;
-    }
-
-    try {
-      setSyncing(true);
-      const response = await axios.post(`${API_URL}/outlook/sync`);
-
-      if (response.data.success) {
-        const demoNote = response.data.isDemo ? '\n\n🎭 Demo Mode - Simulated Data' : '';
-        alert(
-          `✅ Email Sync Complete!${demoNote}\n\n` +
-          `Jobs Found: ${response.data.jobsProcessed}\n` +
-          `Resumes Found: ${response.data.resumesProcessed}\n\n` +
-          `${response.data.errors && response.data.errors.length > 0 ?
-            `Errors: ${response.data.errors.length}` : 'No errors!'}`
-        );
-        fetchStats();
-        fetchCategories();
-        fetchRecentResumes();
-      }
-    } catch (error: any) {
-      console.error('Error syncing Outlook:', error);
-      alert(error.response?.data?.error || 'Failed to sync emails. Please try again.');
-    } finally {
-      setSyncing(false);
-    }
-  };
-
-  const handleDisconnectOutlook = async () => {
-    if (!window.confirm('Are you sure you want to disconnect your Outlook account?')) {
-      return;
-    }
-
-    try {
-      await axios.post(`${API_URL}/outlook/disconnect`);
-      setOutlookConnected(false);
-      setOutlookEmail(null);
-      alert('Outlook account disconnected successfully.');
-    } catch (error: any) {
-      console.error('Error disconnecting Outlook:', error);
-      alert('Failed to disconnect Outlook.');
-    }
-  };
-
   // Ceipal Functions
   const checkCeipalStatus = async () => {
     try {
@@ -353,7 +211,7 @@ const ResumeDashboard: React.FC = () => {
       const response = await axios.get(`${API_URL}/ceipal/config`, {
         params: { userId }
       });
-      
+
       if (response.data.config && response.data.config.isConfigured) {
         setCeipalConnected(true);
       }
@@ -368,7 +226,7 @@ const ResumeDashboard: React.FC = () => {
         'Ceipal is not configured.\n\n' +
         'Click OK to go to Ceipal Settings to configure your API credentials.'
       );
-      
+
       if (goToSettings) {
         navigate('/ceipal-settings');
       }
@@ -534,39 +392,6 @@ const ResumeDashboard: React.FC = () => {
                 <BriefcaseIcon className="h-5 w-5" />
                 <span>Job Pipeline</span>
               </button>
-
-              {/* Outlook Integration */}
-              {outlookConnected ? (
-                <div className="flex items-center space-x-2">
-                  <button
-                    onClick={handleSyncOutlook}
-                    disabled={syncing}
-                    className={`flex items-center space-x-2 px-4 py-2 rounded-lg disabled:opacity-50 transition-all ${
-                      isDemoMode
-                        ? 'bg-amber-600 text-white hover:bg-amber-700'
-                        : 'bg-indigo-600 text-white hover:bg-indigo-700'
-                    }`}
-                  >
-                    <ArrowPathIcon className={`h-5 w-5 ${syncing ? 'animate-spin' : ''}`} />
-                    <span>{syncing ? 'Syncing...' : isDemoMode ? 'Demo Sync' : 'Sync Outlook'}</span>
-                  </button>
-                  <button
-                    onClick={handleDisconnectOutlook}
-                    className="px-3 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200"
-                    title={`${isDemoMode ? 'Demo: ' : ''}${outlookEmail}`}
-                  >
-                    <CheckCircleIcon className="h-5 w-5 text-green-600" />
-                  </button>
-                </div>
-              ) : (
-                <button
-                  onClick={handleConnectOutlook}
-                  className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-                >
-                  <EnvelopeIcon className="h-5 w-5" />
-                  <span>Connect Outlook</span>
-                </button>
-              )}
 
               {/* Ceipal Integration */}
               <button
@@ -819,7 +644,7 @@ const ResumeDashboard: React.FC = () => {
                 <div className="text-center">
                   <DocumentTextIcon className="h-16 w-16 mx-auto mb-4 text-gray-300" />
                   <h3 className="text-lg font-semibold text-gray-700 mb-2">No resumes found</h3>
-                  <p className="text-gray-500 mb-6">Upload resumes or sync from Outlook to get started</p>
+                  <p className="text-gray-500 mb-6">Upload resumes or sync from Ceipal to get started</p>
                   <div className="flex gap-3 justify-center">
                     <label className="flex items-center space-x-2 px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 cursor-pointer">
                       <CloudArrowUpIcon className="h-5 w-5" />
@@ -832,13 +657,13 @@ const ResumeDashboard: React.FC = () => {
                         className="hidden"
                       />
                     </label>
-                    {!outlookConnected && (
+                    {!ceipalConnected && (
                       <button
-                        onClick={handleConnectOutlook}
-                        className="flex items-center space-x-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
+                        onClick={() => navigate('/ceipal-settings')}
+                        className="flex items-center space-x-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
                       >
-                        <EnvelopeIcon className="h-5 w-5" />
-                        <span>Connect Outlook</span>
+                        <StarIcon className="h-5 w-5" />
+                        <span>Connect Ceipal</span>
                       </button>
                     )}
                   </div>

@@ -5,13 +5,28 @@ import {
   UserGroupIcon,
   SparklesIcon,
   ChartBarIcon,
-  BriefcaseIcon
+  BriefcaseIcon,
+  CurrencyDollarIcon
 } from '@heroicons/react/24/outline';
 
 const HomePage: React.FC = () => {
   const navigate = useNavigate();
 
   const features = [
+    {
+      title: 'Salary Predictor',
+      description: 'Get accurate salary ranges from Indeed, Glassdoor, ZipRecruiter, and more. AI-powered predictions with cost-of-living adjustments.',
+      icon: CurrencyDollarIcon,
+      path: '/salary-predictor',
+      color: 'from-green-500 to-teal-600',
+      highlights: [
+        'Multi-Source Data',
+        'Real-Time Scraping',
+        'COL Adjustments',
+        'Percentile Analysis'
+      ],
+      badge: 'New'
+    },
     {
       title: 'ATS Resume Optimizer',
       description: 'Upload job descriptions and analyze candidate resumes with AI-powered scoring. Get detailed insights on skill matches, experience, and keyword optimization.',
@@ -27,30 +42,29 @@ const HomePage: React.FC = () => {
     },
     {
       title: 'Resume Dashboard',
-      description: 'Automatically organize resumes from emails/folders by skills. Smart categorization for Java, Python, React, and 100+ technologies.',
+      description: 'Automatically organize resumes from Ceipal and uploads by skills. Smart categorization for Java, Python, React, and 100+ technologies.',
       icon: UserGroupIcon,
       path: '/resume-dashboard',
       color: 'from-green-500 to-teal-600',
       highlights: [
         'Auto Skill Detection',
-        'Email/Folder Import',
+        'Ceipal Integration',
         'Smart Categorization',
         'Candidate Scoring'
       ]
     },
     {
       title: 'Job Pipeline',
-      description: 'Unified job management from Outlook, Ceipal, and all sources. AI-powered semantic matching finds the best candidates using Sentence Transformers.',
+      description: 'Unified job management from VMS, iLabor360, Ceipal, and all sources. AI-powered semantic matching finds the best candidates with salary predictions.',
       icon: BriefcaseIcon,
       path: '/job-pipeline',
       color: 'from-blue-500 to-cyan-600',
       highlights: [
         'AI Semantic Matching',
         'Multi-Source Jobs',
-        'Smart Filtering',
+        'Salary Predictions',
         'Candidate Tracking'
       ],
-      badge: 'New'
     }
   ];
 
@@ -93,7 +107,7 @@ const HomePage: React.FC = () => {
         </div>
 
         {/* Feature Cards */}
-        <div className="grid md:grid-cols-3 gap-8 mb-12">
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
           {features.map((feature) => {
             const IconComponent = feature.icon;
             return (

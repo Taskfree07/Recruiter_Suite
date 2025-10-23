@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { toast } from 'react-hot-toast';
+import { useNavigate } from 'react-router-dom';
 import {
   BriefcaseIcon,
   MagnifyingGlassIcon,
@@ -15,6 +16,7 @@ import {
   EnvelopeIcon,
   PhoneIcon,
   ArrowLeftIcon,
+  ArrowPathIcon,
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import axios from 'axios';
@@ -67,6 +69,7 @@ interface Candidate {
 }
 
 const JobPipeline: React.FC = () => {
+  const navigate = useNavigate();
   const [jobs, setJobs] = useState<Job[]>([]);
   const [filteredJobs, setFilteredJobs] = useState<Job[]>([]);
   const [selectedJob, setSelectedJob] = useState<Job | null>(null);
@@ -75,10 +78,14 @@ const JobPipeline: React.FC = () => {
   const [matchingLoading, setMatchingLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [sourceFilter, setSourceFilter] = useState<string>('all');
+  const [ilabor360Connected, setIlabor360Connected] = useState(false);
+  const [ilabor360Syncing, setIlabor360Syncing] = useState(false);
 
-  // Fetch jobs
+  // Fetch jobs and check connection status
   useEffect(() => {
     fetchJobs();
+    checkILabor360Status();
   }, []);
 
   // Apply filters
@@ -100,8 +107,13 @@ const JobPipeline: React.FC = () => {
       filtered = filtered.filter((job) => job.status === statusFilter);
     }
 
+    // Source filter
+    if (sourceFilter !== 'all') {
+      filtered = filtered.filter((job) => job.source?.toLowerCase() === sourceFilter.toLowerCase());
+    }
+
     setFilteredJobs(filtered);
-  }, [searchTerm, statusFilter, jobs]);
+  }, [searchTerm, statusFilter, sourceFilter, jobs]);
 
   const fetchJobs = async () => {
     try {
@@ -165,6 +177,57 @@ const JobPipeline: React.FC = () => {
     fetchMatchedCandidates(job._id);
   };
 
+  const checkILabor360Status = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/ilabor360/config`);
+
+      if (response.data.success && response.data.config && response.data.config.username) {
+        setIlabor360Connected(true);
+      }
+    } catch (error) {
+      console.error('Error checking iLabor360 status:', error);
+    }
+  };
+
+  const handleSyncILabor360 = async () => {
+    if (!ilabor360Connected) {
+      const goToSettings = window.confirm(
+        'iLabor360 is not configured.\n\n' +
+        'Click OK to go to iLabor360 Settings to configure your login credentials.'
+      );
+
+      if (goToSettings) {
+        navigate('/ilabor360-settings');
+      }
+      return;
+    }
+
+    try {
+      setIlabor360Syncing(true);
+      const response = await axios.post(`${API_URL}/api/ilabor360/sync`, {
+        userId: 'default-user'
+      });
+
+      if (response.data.success) {
+        const reqStats = response.data.stats.requisitions;
+        const duration = (response.data.stats.durationMs / 1000).toFixed(1);
+
+        toast.success(
+          `iLabor360 Sync Complete in ${duration}s!\n` +
+          `${reqStats.added} jobs added, ${reqStats.updated} updated`
+        );
+
+        // Refresh jobs list
+        fetchJobs();
+      }
+    } catch (error: any) {
+      console.error('Error syncing iLabor360:', error);
+      toast.error(error.response?.data?.error || 'Failed to sync with iLabor360');
+    } finally {
+      setIlabor360Syncing(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const styles: Record<string, { bg: string; text: string; icon: any }> = {
       open: { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircleIcon },
@@ -206,10 +269,11 @@ const JobPipeline: React.FC = () => {
   const getSourceBadge = (source?: string) => {
     // Handle undefined or null source
     const sourceValue = source || 'manual';
-    
+
     const styles: Record<string, { bg: string; text: string }> = {
-      outlook: { bg: 'bg-blue-100', text: 'text-blue-800' },
       ceipal: { bg: 'bg-purple-100', text: 'text-purple-800' },
+      vms: { bg: 'bg-teal-100', text: 'text-teal-800' },
+      ilabor360: { bg: 'bg-orange-100', text: 'text-orange-800' },
       manual: { bg: 'bg-gray-100', text: 'text-gray-800' },
     };
 
@@ -256,6 +320,59 @@ const JobPipeline: React.FC = () => {
                 </p>
               </div>
             </div>
+
+            {/* Action Buttons */}
+            <div className="flex items-center space-x-3">
+              {/* Back to Home */}
+              <button
+                onClick={() => navigate('/')}
+                className="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                title="Back to Home"
+              >
+                <ArrowLeftIcon className="h-5 w-5" />
+              </button>
+
+              {/* iLabor360 Sync */}
+              <button
+                onClick={handleSyncILabor360}
+                disabled={ilabor360Syncing}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg disabled:opacity-50 transition-all ${
+                  ilabor360Connected
+                    ? 'bg-orange-600 text-white hover:bg-orange-700 shadow-md'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+                title={ilabor360Connected ? 'Sync jobs from iLabor360' : 'Click to configure iLabor360'}
+              >
+                {ilabor360Syncing ? (
+                  <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                ) : (
+                  <BriefcaseIcon className="h-5 w-5" />
+                )}
+                <span>{ilabor360Syncing ? 'Syncing...' : ilabor360Connected ? 'Sync iLabor360' : 'iLabor360'}</span>
+              </button>
+
+              {/* iLabor360 Settings */}
+              <button
+                onClick={() => navigate('/ilabor360-settings')}
+                className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors shadow-md"
+                title="Configure iLabor360 Settings"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>Settings</span>
+              </button>
+
+              {/* Refresh Jobs */}
+              <button
+                onClick={fetchJobs}
+                className="p-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                title="Refresh jobs list"
+              >
+                <ArrowPathIcon className="h-5 w-5" />
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -288,6 +405,18 @@ const JobPipeline: React.FC = () => {
               <option value="filled">Filled</option>
               <option value="on-hold">On Hold</option>
               <option value="interviewing">Interviewing</option>
+            </select>
+
+            <select
+              value={sourceFilter}
+              onChange={(e) => setSourceFilter(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            >
+              <option value="all">All Sources</option>
+              <option value="vms">VMS</option>
+              <option value="ilabor360">iLabor360</option>
+              <option value="ceipal">Ceipal</option>
+              <option value="manual">Manual</option>
             </select>
           </div>
 
