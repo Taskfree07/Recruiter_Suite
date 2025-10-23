@@ -1,7 +1,7 @@
 {
-  "name": "backend",
+  "name": "recruiter-suite-backend",
   "version": "1.0.0",
-  "description": "",
+  "description": "Recruiter Suite - Backend API for intelligent recruiting platform",
   "main": "index.js",
   "scripts": {
     "dev": "ts-node src/server.ts",

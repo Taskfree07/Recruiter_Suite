@@ -1,68 +1,178 @@
-# 🎯 ATS Resume Optimizer Pro
+# 🎯 Recruiter Suite
 
-> An intelligent Applicant Tracking System that analyzes candidate resumes against job descriptions and provides accurate match scores.
+> An intelligent, AI-powered recruiting platform that streamlines your entire hiring workflow with automated job scraping, smart candidate matching, and seamless ATS integrations.
 
 ![License](https://img.shields.io/badge/license-MIT-blue.svg)
 ![Node](https://img.shields.io/badge/node-%3E%3D16.0.0-brightgreen.svg)
 ![React](https://img.shields.io/badge/react-18.2.0-blue.svg)
+![Python](https://img.shields.io/badge/python-3.8%2B-blue.svg)
+![MongoDB](https://img.shields.io/badge/mongodb-4.4%2B-green.svg)
 
-## ✨ Features
+## ✨ Core Features
 
-- 📊 **Smart Scoring Algorithm** - Analyzes resumes based on skills, experience, education, and keywords
-- 📁 **Multiple Resumes per Candidate** - Upload and analyze multiple versions of each candidate's resume
-- 🔄 **Average Score Calculation** - Automatically averages scores across all resumes per candidate
-- 💾 **Persistent Storage** - Resume files stored on server, survive page reloads
-- 🎨 **Modern UI** - Clean, intuitive interface built with React and TailwindCSS
-- 📈 **Real-time Analysis** - Instant scoring and ranking of candidates
-- 🔍 **Detailed Breakdown** - View skill match, experience match, education match, and keyword match scores
-- 📝 **Job Description Parsing** - Automatically extracts requirements from job descriptions
+### 🤖 AI-Powered Resume Matching
+- **Smart Scoring Algorithm** - Multi-dimensional analysis based on skills, experience, education, and keywords
+- **Semantic Matching** - Advanced AI embeddings using Sentence Transformers for contextual understanding
+- **Batch Processing** - Match multiple candidates against job requirements simultaneously
+- **Weighted Scoring** - Customizable weights (60% semantic similarity + 40% skills match)
+- **Real-time Analysis** - Instant scoring and ranking of candidates
+
+### 📊 Job Pipeline Management
+- **Visual Pipeline** - Kanban-style board with drag-and-drop functionality
+- **Stage Tracking** - Track candidates through: New, Screening, Interview, Offer, Hired, Rejected
+- **AI Match Scores** - See candidate fit percentage for each job
+- **Quick Actions** - Move candidates between stages with a single click
+- **Job Analytics** - Monitor candidate distribution across pipeline stages
+
+### 🔄 Multi-Source Job Integration
+
+#### iLabor360 Integration
+- **Automated Job Scraping** - Direct integration with iLabor360 vendor portal
+- **Manual Login Support** - Secure browser automation with Selenium
+- **Requisition Sync** - Automatic fetching of open requisitions
+- **Submission Tracking** - Monitor candidate submissions and status
+- **MongoDB Storage** - All jobs and submissions stored locally
+
+#### CEIPAL Integration (Coming Soon)
+- **Job Import** - Fetch jobs from CEIPAL ATS
+- **Candidate Sync** - Two-way candidate synchronization
+- **Status Updates** - Real-time status tracking
+
+### 📧 Email Integration
+- **Outlook Integration** - Parse job descriptions from emails automatically
+- **Smart Detection** - Identify job-related emails
+- **One-Click Import** - Extract and import job requirements
+
+### 💼 Candidate Database
+- **Resume Management** - Store and manage multiple resume versions per candidate
+- **File Support** - PDF, DOC, DOCX formats
+- **Persistent Storage** - Resumes stored on server, survive page reloads
+- **Search & Filter** - Quick candidate lookup
+- **Bulk Upload** - Upload multiple resumes at once
+
+### 💰 Salary Prediction (ML-Powered)
+- **Predictive Analytics** - Estimate salary ranges based on job requirements
+- **Market Insights** - Data-driven compensation recommendations
+- **Experience-Based** - Factors in years of experience, skills, location
+
+### 🎨 Modern User Interface
+- **Dual Workflow Options**:
+  - **ATS Optimizer** - Traditional resume-job matching workflow
+  - **Job Pipeline** - Modern Kanban-style candidate management
+- **Responsive Design** - Works on desktop, tablet, and mobile
+- **Dark Mode Ready** - Eye-friendly interface
+- **Real-time Updates** - Instant feedback and notifications
+- **TailwindCSS** - Clean, modern styling
+
+## 🏗️ Architecture
+
+### Tech Stack
+
+**Frontend:**
+- React 18.2 with TypeScript
+- React Router for navigation
+- TailwindCSS for styling
+- Axios for API calls
+- React Hot Toast for notifications
+- React Dropzone for file uploads
+- Recharts for data visualization
+
+**Backend:**
+- Node.js with Express 5
+- TypeScript for type safety
+- MongoDB with Mongoose
+- JWT authentication
+- Multer for file uploads
+- OpenAI GPT-4 for advanced parsing
+- Google Gemini AI for analysis
+
+**AI/ML Services:**
+- **Python Flask Service** (Port 5001) - Sentence Transformers for semantic matching
+- **AI Matching Service** - Cosine similarity, embeddings, batch processing
+- Model: `all-MiniLM-L6-v2` (lightweight, fast)
+
+**Web Scraping:**
+- **Python Selenium Service** (Port 5002) - iLabor360 scraper
+- Headless Chrome automation
+- Session management
+- Beautiful Soup for HTML parsing
 
 ## 🚀 Quick Start
 
 ### Prerequisites
 
-- **Node.js** (v16 or higher)
-- **MongoDB** (v4.4 or higher)
+- **Node.js** v16 or higher
+- **MongoDB** v4.4 or higher
+- **Python** 3.8 or higher
+- **Google Chrome** (for web scraping)
 - **npm** or **yarn**
 
 ### Installation
 
-1. **Clone the repository**
+#### 1. Clone the Repository
 ```bash
-git clone https://github.com/Adiltechgene007/ATS-RESUME-FINAL.git
-cd ATS-RESUME-FINAL
+git clone https://github.com/YourUsername/Recruiter-Suite.git
+cd Recruiter-Suite
 ```
 
-2. **Install Backend Dependencies**
+#### 2. Backend Setup
 ```bash
 cd backend
 npm install
 ```
 
-3. **Install Frontend Dependencies**
+Create `.env` file in `backend/` folder:
+```env
+MONGODB_URI=mongodb://localhost:27017/recruiter_suite
+PORT=5000
+NODE_ENV=development
+
+# AI Services (Optional)
+OPENAI_API_KEY=your_openai_key_here
+GEMINI_API_KEY=your_gemini_key_here
+
+# Email Integration (Optional)
+OUTLOOK_CLIENT_ID=your_outlook_client_id
+OUTLOOK_CLIENT_SECRET=your_outlook_secret
+
+# CEIPAL Integration (Optional)
+CEIPAL_API_KEY=your_ceipal_key
+CEIPAL_BASE_URL=https://api.ceipal.com
+```
+
+#### 3. Frontend Setup
 ```bash
 cd ../frontend
 npm install
 ```
 
-4. **Setup Environment Variables**
-
-Create a `.env` file in the `backend` folder:
+#### 4. AI Matching Service Setup
 ```bash
-cd ../backend
-cp .env.example .env
+cd ../ai-matching-service
+python -m venv venv
+
+# Windows
+venv\Scripts\activate
+# Mac/Linux
+source venv/bin/activate
+
+pip install -r requirements.txt
 ```
 
-Edit `.env` with your configuration:
-```env
-MONGODB_URI=mongodb://localhost:27017/ats_resume_optimizer
-PORT=5000
-NODE_ENV=development
+#### 5. iLabor360 Scraper Setup
+```bash
+cd ../ilabor360-scraper
+python -m venv venv
+
+# Windows
+venv\Scripts\activate
+# Mac/Linux
+source venv/bin/activate
+
+pip install -r requirements.txt
 ```
 
-5. **Start MongoDB**
-
-Make sure MongoDB is running on your system:
+#### 6. Start MongoDB
 ```bash
 # Windows
 net start MongoDB
@@ -74,249 +184,401 @@ brew services start mongodb-community
 sudo systemctl start mongod
 ```
 
-6. **Load Existing Resumes (One-time Setup)**
-
-The project comes with 48 sample resumes. Load them into the system:
+#### 7. Load Sample Data (Optional)
 ```bash
 cd backend
 npm run load-resumes
 ```
 
-Expected output:
-```
-🚀 Starting resume loading process...
-📁 Found 48 resume files
-✅ John Doe: 5 resumes loaded
-✅ Jane Smith: 5 resumes loaded
-...
-✨ Success! Loaded 48 resumes for 10 candidates
-```
+### Running the Application
 
-7. **Start the Application**
-
-Open two terminal windows:
+You'll need **4 terminal windows**:
 
 **Terminal 1 - Backend:**
 ```bash
 cd backend
-npm run dev
+npm run dev:watch
+# Runs on http://localhost:5000
 ```
 
 **Terminal 2 - Frontend:**
 ```bash
 cd frontend
 npm start
+# Runs on http://localhost:3000
+```
+
+**Terminal 3 - AI Matching Service:**
+```bash
+cd ai-matching-service
+python app.py
+# Runs on http://localhost:5001
+```
+
+**Terminal 4 - iLabor360 Scraper:**
+```bash
+cd ilabor360-scraper
+python app.py
+# Runs on http://localhost:5002
 ```
 
 The application will open at `http://localhost:3000`
 
-## 📖 How to Use
+## 📖 User Guide
 
-### Step 1: Upload Job Description
+### Workflow 1: ATS Optimizer (Traditional Resume Matching)
 
-1. Click on **"Upload PDF"** or **"Write Text"** tab
-2. Enter company name (optional)
-3. Either:
-   - Upload a PDF/DOC file with the job description, OR
-   - Paste the job description text directly
-4. Click **"Import Job Description"**
+1. **Upload Job Description**
+   - Go to "ATS Optimizer" from home page
+   - Upload PDF/DOC or paste text
+   - Click "Import Job Description"
 
-### Step 2: Select Candidates
+2. **Select Candidates**
+   - Click "Add All" or select individual candidates
+   - Each candidate shows number of resumes
 
-You'll see a list of candidates on the right panel. Each candidate shows:
-- Name with avatar
-- Number of resumes uploaded
-- Selection status (highlighted when selected)
+3. **Analyze & Score**
+   - Click "Check Fit" button
+   - View ranked candidates with match percentages
+   - See detailed score breakdowns
 
-**To select candidates:**
-- Click **"Add All"** button to select all candidates with resumes, OR
-- Click individual candidate cards to select/deselect them
+4. **Review Results**
+   - Top candidates highlighted
+   - Skill match, experience match, education scores
+   - Overall weighted score
 
-Selected candidates will appear in the middle panel.
+### Workflow 2: Job Pipeline (Modern Kanban)
 
-### Step 3: Analyze Candidates
+1. **Import Jobs**
+   - Configure iLabor360 settings
+   - Fetch requisitions automatically
+   - Or manually add job descriptions
 
-1. Click the **"Check Fit"** button
-2. The system will:
-   - Parse all resumes for each selected candidate
-   - Extract skills, experience, education, and keywords
-   - Calculate individual scores for each resume
-   - Average the scores for candidates with multiple resumes
-   - Rank candidates by overall match percentage
+2. **Add Candidates**
+   - Upload resumes to candidate database
+   - AI automatically calculates match scores
 
-### Step 4: View Results
+3. **Manage Pipeline**
+   - Drag candidates between stages
+   - View AI match percentages
+   - Track progress visually
 
-The **Scoring Summary** section displays:
-- Candidates ranked by match percentage
-- Overall score (weighted average)
-- Skill match percentage
-- Experience match percentage
-- "Top Match" badge for the highest scorer
+4. **Move to Hire**
+   - Screen → Interview → Offer → Hired
+   - All movements tracked and logged
 
-Each candidate card also shows their score badge.
+### Workflow 3: iLabor360 Job Import
 
-## 📁 Project Structure
+1. **Configure Settings**
+   - Go to "iLabor360 Settings"
+   - Enter login URL: `https://vendor.ilabor360.com/logout`
+   - Enter credentials
+   - Click "Save Settings"
 
-```
-ATS-RESUME-FINAL/
-├── backend/
-│   ├── src/
-│   │   ├── models/           # MongoDB schemas
-│   │   ├── routes/           # API endpoints
-│   │   ├── services/         # Business logic (parsing, scoring)
-│   │   ├── scripts/          # Utility scripts (load resumes)
-│   │   └── server.ts         # Express server
-│   ├── uploads/
-│   │   └── resumes/          # Stored resume files (by candidate ID)
-│   └── package.json
-├── frontend/
-│   ├── src/
-│   │   ├── components/       # React components
-│   │   ├── contexts/         # React context (state management)
-│   │   ├── services/         # API calls
-│   │   ├── types/            # TypeScript interfaces
-│   │   └── data/             # Seed data (candidate info)
-│   └── package.json
-├── Resume/                   # Sample resume PDFs (48 files)
-└── README.md
-```
+2. **Test Connection**
+   - Click "Test Connection"
+   - Verify login successful
+
+3. **Fetch Jobs**
+   - Set max requisitions (default: 100)
+   - Click "Fetch Requisitions"
+   - Jobs imported to pipeline automatically
+
+4. **View & Manage**
+   - Go to "Job Pipeline"
+   - See all imported jobs
+   - Add candidates and track progress
 
 ## 🔧 Configuration
 
 ### Scoring Algorithm Weights
 
-The overall score is calculated using weighted components:
-
-```
-Overall Score = 
+Default weights in `backend/src/services/scoringService.ts`:
+```typescript
+Overall Score =
   (Skill Match × 40%) +
   (Experience Match × 30%) +
   (Education Match × 15%) +
   (Keyword Match × 15%)
 ```
 
-You can adjust these weights in `backend/src/services/scoringService.ts`:
+### AI Matching Weights
 
-```typescript
-const overall = Math.round(
-  scores.skillMatch * 0.4 +      // 40% weight
-  scores.experienceMatch * 0.3 +  // 30% weight
-  scores.educationMatch * 0.15 +  // 15% weight
-  scores.keywordMatch * 0.15      // 15% weight
-);
+For semantic matching in `ai-matching-service/app.py`:
+```python
+weighted_score = (overall_similarity * 0.6) + (skills_score * 0.4)
+# 60% semantic similarity
+# 40% exact skills match
 ```
 
-### Adding More Candidates
+### Skill Match Threshold
 
-**Via UI (Recommended):**
-1. Click the **+** icon on any candidate card
-2. Upload resume files (PDF, DOC, DOCX)
-3. Files are automatically saved to the backend
+Skills are considered matched if similarity > 0.7 (70%)
 
-**Via Script:**
-1. Add PDF files to the `Resume/` folder
-2. Run `npm run load-resumes` in the backend folder
-3. Resumes will be redistributed among all candidates
+## 📁 Project Structure
 
-## 🎨 Features in Detail
+```
+Recruiter-Suite/
+├── backend/                      # Node.js/Express API
+│   ├── src/
+│   │   ├── models/              # MongoDB schemas
+│   │   │   ├── candidate.ts
+│   │   │   ├── job.ts
+│   │   │   ├── unifiedJob.ts
+│   │   │   ├── iLabor360Config.ts
+│   │   │   └── recruiterResume.ts
+│   │   ├── routes/              # API endpoints
+│   │   │   ├── jobRoutes.ts
+│   │   │   ├── candidateRoutes.ts
+│   │   │   ├── scoringRoutes.ts
+│   │   │   ├── matchingRoutes.ts
+│   │   │   ├── jobPipelineRoutes.ts
+│   │   │   ├── iLabor360Routes.ts
+│   │   │   ├── ceipalRoutes.ts
+│   │   │   └── salaryRoutes.ts
+│   │   ├── services/            # Business logic
+│   │   │   ├── parserService.ts
+│   │   │   ├── scoringService.ts
+│   │   │   ├── matchingService.ts
+│   │   │   ├── aiService.ts
+│   │   │   ├── geminiService.ts
+│   │   │   ├── iLabor360Service.ts
+│   │   │   ├── salaryService.ts
+│   │   │   └── emailService.ts
+│   │   ├── scripts/
+│   │   │   ├── loadExistingResumes.ts
+│   │   │   ├── seedDemoCandidates.ts
+│   │   │   └── seedDemoJobs.ts
+│   │   └── server.ts            # Express server
+│   └── uploads/
+│       └── resumes/             # Stored resume files
+├── frontend/                     # React SPA
+│   ├── src/
+│   │   ├── components/
+│   │   │   ├── layout/
+│   │   │   │   └── Header.tsx
+│   │   │   ├── upload/
+│   │   │   │   ├── ResumeUpload.tsx
+│   │   │   │   ├── JobUpload.tsx
+│   │   │   │   └── CheckFitButton.tsx
+│   │   │   ├── scoring/
+│   │   │   │   └── ScoringSummary.tsx
+│   │   │   └── candidates/
+│   │   │       ├── CandidateCard.tsx
+│   │   │       ├── CandidateList.tsx
+│   │   │       └── ResumeUploadModal.tsx
+│   │   ├── pages/
+│   │   │   ├── HomePage.tsx
+│   │   │   ├── Dashboard.tsx          # ATS Optimizer
+│   │   │   ├── ResumeDashboard.tsx
+│   │   │   ├── JobPipeline.tsx        # Kanban board
+│   │   │   ├── CandidateDatabase.tsx
+│   │   │   ├── ILabor360Settings.tsx
+│   │   │   ├── CeipalSettings.tsx
+│   │   │   └── SalaryPredictor.tsx
+│   │   ├── contexts/
+│   │   │   └── AppContext.tsx
+│   │   └── App.tsx
+│   └── public/
+│       └── index.html
+├── ai-matching-service/          # Python Flask API
+│   ├── app.py                   # Sentence Transformers service
+│   └── requirements.txt
+├── ilabor360-scraper/           # Python Selenium scraper
+│   ├── app.py                   # Flask API
+│   ├── scraper.py               # Selenium automation
+│   ├── direct_scraper.py        # Direct scraping logic
+│   ├── parser.py                # HTML parsing
+│   └── requirements.txt
+├── Resume/                       # Sample resumes (48 PDFs)
+└── README.md
+```
 
-### Multi-Resume Support
+## 🛠️ API Documentation
 
-Each candidate can have multiple resumes:
-- Different versions (e.g., technical resume, managerial resume)
-- Updated versions over time
-- Tailored resumes for different roles
+### Backend API (Port 5000)
 
-The system automatically:
-- Analyzes each resume individually
-- Calculates an average score across all resumes
-- Provides a single, comprehensive match percentage
-
-### Intelligent Skill Matching
-
-- **Exact matches**: 100 points (e.g., "React" === "React")
-- **Partial matches**: 70 points (e.g., "React.js" contains "React")
-- **Weighted scoring**: Considers both quantity and quality of matches
-
-### Keyword Analysis
-
-- Extracts top 50 keywords from job description
-- Exact word matches: 100 points
-- Substring matches: 50 points
-- Provides overall content relevance score
-
-### Experience Matching
-
-- Estimates years of experience from resume entries
-- Compares against job requirements
-- Caps at 100% when requirements are met
-
-## 🛠️ API Endpoints
-
-### Jobs
+#### Jobs
 - `POST /api/jobs/upload` - Upload job description file
-- `POST /api/jobs/import-text` - Import job description as text
+- `POST /api/jobs/import-text` - Import job as text
 - `GET /api/jobs` - Get all jobs
 - `GET /api/jobs/:id` - Get specific job
+- `DELETE /api/jobs/:id` - Delete job
 
-### Candidates
-- `POST /api/candidate-resumes/upload/:candidateId` - Upload resume for candidate
-- `POST /api/candidate-scoring/check-candidate-fit-by-path` - Analyze candidates
+#### Candidates
+- `GET /api/candidates` - Get all candidates
+- `POST /api/candidates` - Create candidate
+- `POST /api/candidate-resumes/upload/:candidateId` - Upload resume
+- `GET /api/candidate-resumes/:candidateId` - Get candidate resumes
 
-## 📊 Sample Output
+#### Scoring & Matching
+- `POST /api/candidate-scoring/check-candidate-fit-by-path` - Score candidates
+- `POST /api/matching/match-candidate` - AI semantic matching
+- `POST /api/matching/batch-match` - Batch candidate matching
 
+#### Job Pipeline
+- `GET /api/job-pipeline/jobs` - Get all pipeline jobs
+- `POST /api/job-pipeline/jobs` - Create pipeline job
+- `PATCH /api/job-pipeline/jobs/:jobId/candidates/:candidateId/stage` - Move candidate stage
+
+#### iLabor360
+- `POST /api/ilabor360/save-config` - Save iLabor360 credentials
+- `GET /api/ilabor360/config` - Get saved config
+- `POST /api/ilabor360/test-connection` - Test login
+- `POST /api/ilabor360/fetch-requisitions` - Fetch jobs
+- `POST /api/ilabor360/fetch-submissions` - Fetch submissions
+
+#### Salary Prediction
+- `POST /api/salary/predict` - Predict salary for job
+
+### AI Matching Service (Port 5001)
+
+- `GET /health` - Health check
+- `POST /embed` - Generate embeddings
+- `POST /similarity` - Calculate similarity between texts
+- `POST /match-candidate` - Match single candidate
+- `POST /batch-match` - Match multiple candidates
+
+### iLabor360 Scraper (Port 5002)
+
+- `GET /health` - Health check
+- `POST /scrape/login` - Login and create session
+- `POST /scrape/requisitions` - Scrape job requisitions
+- `POST /scrape/submissions` - Scrape candidate submissions
+- `POST /scrape/all` - Scrape both requisitions and submissions
+- `POST /session/close` - Close browser session
+
+## 🎯 Key Features Explained
+
+### AI Semantic Matching
+
+Uses Sentence Transformers (`all-MiniLM-L6-v2`) to:
+1. Convert resumes and job descriptions to vector embeddings
+2. Calculate cosine similarity for semantic understanding
+3. Match skills with 70% threshold
+4. Combine semantic (60%) and exact skill match (40%) scores
+
+**Example:**
+```json
+{
+  "overall_similarity_percentage": 85.5,
+  "skills_match_percentage": 75.0,
+  "weighted_score_percentage": 81.3,
+  "matched_skills": [
+    {
+      "job_skill": "React",
+      "candidate_skill": "React.js",
+      "similarity": 0.92
+    }
+  ]
+}
 ```
-Candidate Rankings:
-1. Jane Smith      - 92% match (12 skills, 5+ years exp)
-2. John Doe        - 87% match (8 skills, 3 years exp)
-3. Mike Johnson    - 75% match (7 skills, 4 years exp)
-4. Sarah Wilson    - 68% match (5 skills, 2 years exp)
-...
-```
 
-## 🐛 Troubleshooting
+### iLabor360 Scraping Flow
 
-### "Failed to import job description"
-- **Cause**: Backend not running or CORS issue
-- **Fix**: Restart backend with `npm run dev`
+1. **Login** - Selenium opens Chrome, logs in
+2. **Navigate** - Goes to Requisitions page
+3. **Extract** - Parses HTML table data
+4. **Transform** - Converts to standardized JSON
+5. **Store** - Saves to MongoDB
+6. **Session** - Keeps browser session alive for 1 hour
 
-### "No valid resume files found"
-- **Cause**: Resume files lost from browser storage
-- **Fix**: Run `npm run load-resumes` in backend folder
+### Multi-Resume Averaging
 
-### All candidates show same score
-- **Cause**: Parsing or scoring algorithm issue
-- **Fix**: Check backend console for debug logs, verify PDFs are being read
-
-### MongoDB connection error
-- **Cause**: MongoDB not running
-- **Fix**: Start MongoDB service
-
-See `TROUBLESHOOTING.md` for more details.
+When a candidate has multiple resumes:
+1. Each resume analyzed individually
+2. Scores calculated per resume
+3. Average across all resumes
+4. Single overall score displayed
 
 ## 🚀 Deployment
 
-Ready to deploy and showcase your application? Check out the comprehensive deployment guide:
+### Quick Deploy to Render (Free)
 
-**[📖 Deployment Guide](DEPLOYMENT.md)** - Complete step-by-step instructions for deploying to:
-- **Render** (Free, Recommended for showcasing)
-- **Docker** (For VPS or self-hosting)
-- Environment configuration
-- Troubleshooting deployment issues
+See **[DEPLOYMENT.md](DEPLOYMENT.md)** for step-by-step instructions.
 
-Quick deploy to Render in 15 minutes - perfect for portfolio projects!
+**Services Required:**
+1. Web Service (Backend) - Node.js
+2. Web Service (Frontend) - Static site
+3. Web Service (AI Service) - Python
+4. Web Service (Scraper) - Python
+5. MongoDB Atlas (Free tier)
+
+### Docker Deployment
+
+```bash
+docker-compose up -d
+```
+
+See `docker-compose.yml` for configuration.
+
+## 🐛 Troubleshooting
+
+### Backend won't start
+- **Check MongoDB** is running: `mongosh` or `mongo`
+- **Check port 5000** is available: `netstat -ano | findstr :5000` (Windows)
+- **Verify .env** file exists in backend folder
+
+### AI Matching not working
+- **Start AI service**: `python ai-matching-service/app.py`
+- **Check port 5001**: Should see "Starting AI Matching Service on port 5001"
+- **Model download**: First run downloads ~100MB model
+
+### iLabor360 login fails
+- **Check credentials** are correct
+- **Try headless=false** in `ilabor360-scraper/scraper.py` line 23
+- **Check Chrome** is installed
+- **View screenshots** in `ilabor360-scraper/` for debug images
+
+### Candidates show 0% match
+- **Check AI service** is running on port 5001
+- **Verify job description** was imported correctly
+- **Check backend logs** for AI service connection errors
+
+### File upload fails
+- **Check disk space** in `backend/uploads/` folder
+- **Verify file permissions** on uploads directory
+- **File size limit**: Max 10MB per file
+
+## 📊 Sample Workflow
+
+```
+1. Start all services (Backend, Frontend, AI, Scraper)
+2. Configure iLabor360 credentials
+3. Fetch 50 requisitions from iLabor360
+4. Upload 10 candidate resumes
+5. AI matches all candidates against all jobs
+6. View job pipeline with match scores
+7. Drag candidates through stages: Screen → Interview → Offer → Hired
+8. Export hired candidates or send to CEIPAL
+```
+
+## 🔐 Security Notes
+
+- Credentials stored encrypted in MongoDB
+- Browser sessions auto-expire after 1 hour
+- JWT tokens for API authentication
+- CORS configured for localhost only
+- No credentials logged to files
+- File uploads sanitized and validated
 
 ## 📚 Documentation
 
-- **[Setup Guide](SETUP_EXISTING_RESUMES.md)** - Detailed setup instructions
-- **[Deployment Guide](DEPLOYMENT.md)** - Production deployment instructions
-- **[Scoring Algorithm](SCORING_IMPROVEMENTS.md)** - How scoring works
-- **[Implementation Notes](IMPLEMENTATION_NOTES.md)** - Technical details
-- **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and fixes
+- **[Deployment Guide](DEPLOYMENT.md)** - Production deployment
+- **[iLabor360 Setup](ILABOR360_SETUP_COMPLETE.md)** - Integration guide
+- **[Job Pipeline](JOB_PIPELINE_IMPLEMENTATION.md)** - Pipeline features
+- **[Demo Guide](DEMO_QUICKSTART.md)** - Demo mode instructions
+- **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues
 
 ## 🤝 Contributing
 
 Contributions are welcome! Please feel free to submit a Pull Request.
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
 ## 📝 License
 
@@ -329,18 +591,33 @@ This project is licensed under the MIT License.
 
 ## 🙏 Acknowledgments
 
-- Built with React, Node.js, Express, and MongoDB
-- PDF parsing powered by pdf-parse
-- UI components styled with TailwindCSS
-- Icons from Heroicons
+- **AI/ML**: OpenAI GPT-4, Google Gemini, Sentence Transformers
+- **Frontend**: React, TailwindCSS, Heroicons
+- **Backend**: Node.js, Express, MongoDB
+- **Web Scraping**: Selenium, Beautiful Soup
+- **PDF Parsing**: pdf-parse, mammoth
+- **Charts**: Recharts
+
+## 🌟 Roadmap
+
+- [ ] CEIPAL full integration
+- [ ] Email parsing automation
+- [ ] Advanced analytics dashboard
+- [ ] Chrome extension for LinkedIn
+- [ ] Mobile app (React Native)
+- [ ] Multi-language support
+- [ ] Video interview integration
+- [ ] Background check integration
 
 ## 📞 Support
 
 For issues and questions:
 - Open an issue on GitHub
-- Check the documentation files
-- Review the troubleshooting guide
+- Check documentation files
+- Review troubleshooting guide
 
 ---
 
 **Made with ❤️ for better hiring decisions**
+
+**Recruiter Suite** - Your all-in-one intelligent recruiting platform
