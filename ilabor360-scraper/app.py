@@ -6,7 +6,7 @@ Flask API for scraping requisitions and submissions from iLabor360
 from flask import Flask, request, jsonify
 from flask_cors import CORS
 import logging
-from scraper import ILabor360Scraper
+from scraper_fast import FastILabor360Scraper
 from parser import ILabor360Parser
 import os
 from dotenv import load_dotenv
@@ -25,8 +25,8 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# Initialize scraper
-scraper = ILabor360Scraper()
+# Initialize FAST scraper (API auto-discovery + parallel fetching)
+scraper = FastILabor360Scraper()
 parser = ILabor360Parser()
 
 @app.route('/health', methods=['GET'])

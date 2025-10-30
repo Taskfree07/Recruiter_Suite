@@ -20,6 +20,8 @@ import aiRoutes from './routes/aiRoutes';
 import jobPipelineRoutes from './routes/jobPipelineRoutes';
 import salaryRoutes from './routes/salaryRoutes';
 import iLabor360Routes from './routes/iLabor360Routes';
+import outlookRoutes from './routes/outlookRoutes';
+import outlookService from './services/outlookService';
 
 console.log('About to import matching routes...');
 import matchingRoutes from './routes/matchingRoutes';
@@ -129,6 +131,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/job-pipeline', jobPipelineRoutes);
 app.use('/api/salary', salaryRoutes);
 app.use('/api/ilabor360', iLabor360Routes);
+app.use('/api/outlook', outlookRoutes);
 console.log('Registering matching routes at /api/matching');
 app.use('/api/matching', matchingRoutes);
 console.log('Matching routes registered successfully');
@@ -141,6 +144,19 @@ app.use((err: any, req: express.Request, res: express.Response, next: express.Ne
     error: process.env.NODE_ENV === 'development' ? err : {}
   });
 });
+
+// Initialize Outlook service if configured
+if (process.env.OUTLOOK_CLIENT_ID && process.env.OUTLOOK_CLIENT_SECRET && process.env.OUTLOOK_TENANT_ID) {
+  outlookService.initialize({
+    clientId: process.env.OUTLOOK_CLIENT_ID,
+    clientSecret: process.env.OUTLOOK_CLIENT_SECRET,
+    tenantId: process.env.OUTLOOK_TENANT_ID,
+    redirectUri: process.env.OUTLOOK_REDIRECT_URI || 'http://localhost:5000/api/outlook/auth/callback'
+  });
+  console.log('✅ Outlook service initialized');
+} else {
+  console.log('⚠️ Outlook service not configured - missing environment variables');
+}
 
 // Database connection
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/ats_resume_optimizer')

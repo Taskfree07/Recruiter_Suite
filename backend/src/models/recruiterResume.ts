@@ -65,11 +65,13 @@ export interface IRecruiterResume extends Document {
 
   // Source Information (Email metadata)
   source: {
-    type: string; // "email", "manual_upload", "portal"
+    type: string; // "email", "manual_upload", "portal", "outlook"
     email?: string; // Sender email
     subject?: string; // Email subject
     receivedDate?: Date;
     emailBody?: string; // Excerpt from email
+    outlookMessageId?: string; // Outlook message ID
+    syncedBy?: string; // User who synced (for Outlook/Ceipal)
   };
 
   // File Information
@@ -163,7 +165,9 @@ const RecruiterResumeSchema: Schema = new Schema({
     email: String,
     subject: String,
     receivedDate: Date,
-    emailBody: String
+    emailBody: String,
+    outlookMessageId: String,
+    syncedBy: String
   },
 
   file: {

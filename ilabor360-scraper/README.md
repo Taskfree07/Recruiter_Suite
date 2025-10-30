@@ -31,7 +31,7 @@ venv\Scripts\activate
 **Mac/Linux:**
 ```bash
 source venv/bin/activate
-```
+`
 
 4. **Install dependencies:**
 ```bash

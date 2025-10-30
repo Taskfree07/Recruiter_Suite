@@ -59,53 +59,135 @@ class ILabor360Parser:
         return parsed
     
     def _parse_single_requisition(self, req: Dict) -> Dict:
-        """Parse a single requisition"""
-        title = req.get('title', '').strip()
-        if not title:
-            return None
-        
-        # Extract skills from title and description
+        """Parse a single requisition - preserves ALL scraped columns with proper mapping"""
+
+        # Helper function to safely get field value with multiple fallbacks
+        def get_field(field_names):
+            for name in field_names if isinstance(field_names, list) else [field_names]:
+                val = req.get(name, '').strip() if req.get(name) else ''
+                if val:
+                    return val
+            return ''
+
+        # Extract ALL fields based on the iLabor360 column structure
+        # Map based on common header names and column positions
+        ilabor_data = {
+            'submissionsOpen': get_field(['submissions_open', 'column_0']),
+            'favorite': get_field(['favorite', 'column_1']),
+            'qaStatus': get_field(['qanda_status', 'qa_status', 'q&a_status', 'column_2']),
+            'status': get_field(['status', 'column_3']),
+            'reqId': get_field(['req_id', 'column_4']),
+            'atsId': get_field(['ats_id', 'column_5']),
+            'client': get_field(['client', 'column_6']),
+            'title': get_field(['title', 'column_7']),
+            'customer': get_field(['customer', 'column_8']),
+            'location': get_field(['location', 'column_9']),
+            'start': get_field(['start', 'column_10']),
+            'end': get_field(['end', 'column_11']),
+            'duration': get_field(['duration', 'column_12']),
+            'numPos': get_field(['num_pos', '#_pos', 'column_13']),
+            'c2c': get_field(['c2c', 'column_14']),
+            'numSubs': get_field(['num_subs', '#_subs', 'column_15']),
+            'numActive': get_field(['num_active', '#_active', 'column_16']),
+            'released': get_field(['released', 'column_17']),
+            'assigned': get_field(['assigned', 'column_18']),
+            'owner': get_field(['owner', 'column_19']),
+            'altEmail': get_field(['alt_email', 'column_20']),
+            'type': get_field(['type', 'column_21']),
+            'dept': get_field(['dept', 'department', 'column_22'])
+        }
+
+        # Use extracted fields
+        title = ilabor_data['title'] or 'Unknown Position'
+        location = ilabor_data['location'] or 'Remote'
+        company = ilabor_data['customer'] or ilabor_data['client'] or 'iLabor360'
+
+        # Extract skills from title
         skills = self._extract_skills(title)
-        
+
         # Determine experience level
         experience_level = self._extract_experience_level(title)
-        
+
         # Parse location type
-        location_type = self._parse_location_type(req.get('customer', ''))
-        
+        location_type = self._parse_location_type(company)
+
         # Map status
-        status = self._map_requisition_status(req.get('status', 'open'))
-        
+        status = self._map_requisition_status(ilabor_data['status'] or 'open')
+
         # Parse dates
-        posted_date = self._parse_date(req.get('startDate', ''))
-        closing_date = self._parse_date(req.get('endDate', ''))
-        
+        posted_date = self._parse_date(ilabor_data['start'])
+        closing_date = self._parse_date(ilabor_data['end']) if ilabor_data['end'] else None
+
+        # Get number of positions
+        num_positions = 1
+        try:
+            num_positions = int(ilabor_data['numPos']) if ilabor_data['numPos'] else 1
+        except (ValueError, AttributeError):
+            num_positions = 1
+
+        # Extract job description from detail page data
+        job_description = (
+            req.get('job_description') or
+            req.get('jobdescription') or
+            req.get('description') or
+            req.get('full_page_text', '')[:500] or  # Use first 500 chars if nothing else
+            ''
+        )
+
+        # Build comprehensive metadata with ALL fields
+        metadata = {
+            **ilabor_data,  # Include all iLabor360 fields
+            'headers': req.get('_headers', []),  # Include original headers if available
+            'columnCount': req.get('_column_count', 0),
+            'jobDescription': job_description,  # Full job description from detail page
+            'fullPageText': req.get('full_page_text', ''),  # Complete page text
+            'rawData': {k: v for k, v in req.items() if not k.startswith('_')}  # Store all raw data except internal fields
+        }
+
+        # Create rich description with job description AND all metadata
+        description_parts = [
+            f"**{title}**",
+            "",
+            "## Job Description",
+            job_description if job_description else "No description available",
+            "",
+            "## Requisition Details",
+            f"**Req ID:** {ilabor_data['reqId']}",
+            f"**ATS ID:** {ilabor_data['atsId']}" if ilabor_data['atsId'] else "",
+            f"**Client:** {ilabor_data['client']}",
+            f"**Customer:** {ilabor_data['customer']}",
+            f"**Location:** {location}",
+            f"**Duration:** {ilabor_data['duration']}" if ilabor_data['duration'] else "",
+            f"**Positions:** {ilabor_data['numPos']}",
+            f"**C2C:** {ilabor_data['c2c']}" if ilabor_data['c2c'] else "",
+            f"**Submissions:** {ilabor_data['numSubs']}",
+            f"**Active:** {ilabor_data['numActive']}",
+            f"**Owner:** {ilabor_data['owner']}" if ilabor_data['owner'] else "",
+            f"**Department:** {ilabor_data['dept']}" if ilabor_data['dept'] else ""
+        ]
+        description = '\n'.join(filter(None, description_parts))
+
         return {
             'title': title,
-            'description': f"{title}\n\nClient: {req.get('client', '')}\nCustomer: {req.get('customer', '')}",
-            'company': req.get('customer', req.get('client', 'iLabor360')),
+            'description': description,
+            'company': company,
             'requiredSkills': skills,
             'niceToHaveSkills': [],
             'experienceYears': self._extract_experience_years(title),
             'experienceLevel': experience_level,
-            'location': req.get('location', 'Remote'),
+            'location': location,
             'locationType': location_type,
             'status': status,
             'postedDate': posted_date,
             'closingDate': closing_date,
+            'positions': num_positions,
+            'department': ilabor_data['dept'],
+            'recruiterAssigned': ilabor_data['owner'],
             'source': {
                 'type': 'ilabor360',
-                'id': f"ILABOR360-{req.get('reqId', '')}",
-                'url': '',  # Will be filled by backend if available
-                'metadata': {
-                    'reqId': req.get('reqId', ''),
-                    'atsId': req.get('atsId', ''),
-                    'client': req.get('client', ''),
-                    'customer': req.get('customer', ''),
-                    'originalStatus': req.get('status', ''),
-                    'startDate': req.get('startDate', ''),
-                    'endDate': req.get('endDate', '')
-                }
+                'id': f"ILABOR360-{ilabor_data['reqId']}",
+                'url': '',
+                'metadata': metadata
             }
         }
     

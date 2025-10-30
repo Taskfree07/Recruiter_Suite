@@ -32,12 +32,42 @@ interface Job {
   locationType: 'onsite' | 'remote' | 'hybrid';
   status: 'open' | 'closed' | 'filled' | 'on-hold' | 'interviewing';
   source?: string;
+  sources?: Array<{
+    type: string;
+    metadata?: {
+      reqId?: string;
+      atsId?: string;
+      client?: string;
+      customer?: string;
+      submissionsOpen?: string;
+      favorite?: string;
+      qaStatus?: string;
+      status?: string;
+      start?: string;
+      end?: string;
+      duration?: string;
+      numPos?: string;
+      c2c?: string;
+      numSubs?: string;
+      numActive?: string;
+      released?: string;
+      assigned?: string;
+      owner?: string;
+      altEmail?: string;
+      type?: string;
+      dept?: string;
+      [key: string]: any;
+    };
+  }>;
   requiredSkills: string[];
   niceToHaveSkills: string[];
   experienceYears: { min: number; max: number };
   salaryRange?: { min: number; max: number; currency: string };
   postedDate: string;
   priority: 'low' | 'medium' | 'high' | 'urgent';
+  positions?: number;
+  department?: string;
+  recruiterAssigned?: string;
   createdAt: string;
 }
 
@@ -544,6 +574,138 @@ const JobPipeline: React.FC = () => {
                             {skill}
                           </span>
                         ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* iLabor360 Data Section */}
+                  {selectedJob.source === 'ilabor360' && selectedJob.sources && selectedJob.sources[0]?.metadata && (
+                    <div className="pt-4 mt-4 border-t border-gray-200">
+                      <p className="text-sm font-semibold text-gray-700 mb-3 flex items-center">
+                        <BriefcaseIcon className="w-4 h-4 mr-2" />
+                        iLabor360 Requisition Details
+                      </p>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        {selectedJob.sources[0].metadata.reqId && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600">Req ID:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.reqId}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.atsId && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600">ATS ID:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.atsId}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.client && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600">Client:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.client}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.customer && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600">Customer:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.customer}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.duration && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600">Duration:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.duration}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.numPos && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600"># Positions:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.numPos}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.c2c && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600">C2C:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.c2c}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.numSubs && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600"># Submissions:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.numSubs}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.numActive && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600"># Active:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.numActive}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.owner && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600">Owner:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.owner}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.dept && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600">Department:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.dept}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.type && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600">Type:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.type}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.start && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600">Start:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.start}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.end && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600">End:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.end}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.assigned && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600">Assigned:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.assigned}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.released && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600">Released:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.released}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.qaStatus && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600">Q&A Status:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.qaStatus}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.submissionsOpen && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600">Submissions Open:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.submissionsOpen}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.favorite && (
+                          <div className="bg-gray-50 p-2 rounded">
+                            <span className="font-medium text-gray-600">Favorite:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.favorite}</span>
+                          </div>
+                        )}
+                        {selectedJob.sources[0].metadata.altEmail && (
+                          <div className="bg-gray-50 p-2 rounded col-span-2">
+                            <span className="font-medium text-gray-600">Alt Email:</span>
+                            <span className="ml-2 text-gray-900">{selectedJob.sources[0].metadata.altEmail}</span>
+                          </div>
+                        )}
                       </div>
                     </div>
                   )}

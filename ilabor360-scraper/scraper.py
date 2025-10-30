@@ -358,13 +358,24 @@ class ILabor360Scraper:
 
             # Get table headers to understand column structure
             headers = []
+            header_mapping = {}
             try:
                 header_cells = driver.find_elements(By.CSS_SELECTOR, 'table thead th, .table thead th, th')
                 headers = [cell.text.strip() for cell in header_cells if cell.text.strip()]
-                logger.info(f'Found table headers: {headers}')
-                print(f"📋 Table columns: {', '.join(headers) if headers else 'No headers found'}")
-            except:
-                logger.warning('Could not find table headers')
+
+                # Create a mapping of normalized header names to original names
+                for idx, header in enumerate(headers):
+                    normalized_key = header.lower().replace(' ', '_').replace('#', 'num').replace('&', 'and')
+                    header_mapping[idx] = {
+                        'original': header,
+                        'normalized': normalized_key
+                    }
+
+                logger.info(f'Found {len(headers)} table headers: {headers}')
+                print(f"📋 Found {len(headers)} columns: {', '.join(headers)}")
+                print(f"📋 Column mapping: {header_mapping}")
+            except Exception as e:
+                logger.warning(f'Could not find table headers: {e}')
 
             # Extract data from ALL pages
             page_num = 1
@@ -403,50 +414,143 @@ class ILabor360Scraper:
 
                 print(f"✓ Found {len(rows)} requisitions on this page")
 
-                for row_index, row in enumerate(rows):
-                    if items_scraped >= max_items:
-                        break
+                # Use JavaScript to extract ALL table data including hidden columns
+                try:
+                    # Execute JavaScript to get complete table data
+                    table_data_script = """
+                    function extractTableData() {
+                        const table = document.querySelector('table, .table, [role="table"]');
+                        if (!table) return { headers: [], rows: [] };
 
-                    try:
-                        cells = row.find_elements(By.TAG_NAME, 'td')
+                        // Get ALL headers including hidden ones
+                        const headerCells = table.querySelectorAll('thead th, thead td');
+                        const headers = Array.from(headerCells).map(cell => ({
+                            text: cell.innerText || cell.textContent || '',
+                            visible: window.getComputedStyle(cell).display !== 'none',
+                            width: cell.offsetWidth
+                        }));
 
-                        if len(cells) < 2:
-                            continue
+                        // Get ALL rows
+                        const bodyRows = table.querySelectorAll('tbody tr');
+                        const rows = Array.from(bodyRows).map(row => {
+                            const cells = row.querySelectorAll('td');
+                            return Array.from(cells).map(cell => ({
+                                text: cell.innerText || cell.textContent || '',
+                                visible: window.getComputedStyle(cell).display !== 'none',
+                                width: cell.offsetWidth,
+                                html: cell.innerHTML
+                            }));
+                        });
 
-                        # Extract ALL data from ALL cells dynamically
-                        requisition = {}
+                        return { headers, rows };
+                    }
+                    return extractTableData();
+                    """
 
-                        # Use headers if available, otherwise use generic column names
-                        for idx, cell in enumerate(cells):
-                            cell_text = self._safe_get_text(cells, idx)
-                            if headers and idx < len(headers):
-                                key = headers[idx].lower().replace(' ', '_').replace('-', '_')
-                            else:
-                                key = f'column_{idx}'
-                            requisition[key] = cell_text
+                    table_data = driver.execute_script(table_data_script)
 
-                        # Also add commonly expected fields with fallbacks
-                        if 'status' not in requisition:
-                            requisition['status'] = self._safe_get_text(cells, 0)
-                        if 'title' not in requisition and 'job_title' not in requisition:
-                            requisition['title'] = self._safe_get_text(cells, min(4, len(cells)-1))
-                        if 'location' not in requisition:
-                            requisition['location'] = self._safe_get_text(cells, min(6, len(cells)-1))
+                    if table_data and table_data.get('rows'):
+                        js_headers = [h['text'].strip() for h in table_data['headers']]
+                        logger.info(f"JavaScript extracted {len(js_headers)} headers: {js_headers}")
+                        print(f"\n📋 JavaScript extracted {len(js_headers)} columns (including hidden):")
+                        for idx, h in enumerate(table_data['headers']):
+                            visible_text = "✓ VISIBLE" if h['visible'] else "✗ HIDDEN"
+                            print(f"  [{idx}] {h['text']} - {visible_text} (width: {h['width']}px)")
 
-                        # Apply status filter
-                        if status_filter != 'all':
-                            if requisition.get('status', '').lower() != status_filter.lower():
+                        # Use JavaScript-extracted data
+                        for row_data in table_data['rows'][:max_items - items_scraped]:
+                            try:
+                                requisition = {
+                                    '_headers': js_headers,
+                                    '_column_count': len(row_data)
+                                }
+
+                                # Map each cell to header
+                                for idx, cell_data in enumerate(row_data):
+                                    cell_text = cell_data['text'].strip()
+
+                                    if idx < len(js_headers):
+                                        header = js_headers[idx]
+                                        normalized_key = header.lower().replace(' ', '_').replace('#', 'num').replace('&', 'and').replace('-', '_').replace('.', '')
+                                        requisition[normalized_key] = cell_text
+                                        requisition[f'_visible_{idx}'] = cell_data['visible']
+                                        requisition[f'_width_{idx}'] = cell_data['width']
+                                    else:
+                                        requisition[f'column_{idx}'] = cell_text
+
+                                # Log first requisition with ALL details
+                                if items_scraped == 0:
+                                    print(f"\n" + "="*80)
+                                    print("📊 FIRST REQUISITION - COMPLETE DATA:")
+                                    print("="*80)
+                                    for idx, header in enumerate(js_headers):
+                                        key = header.lower().replace(' ', '_').replace('#', 'num').replace('&', 'and').replace('-', '_').replace('.', '')
+                                        value = requisition.get(key, '')
+                                        visible = requisition.get(f'_visible_{idx}', True)
+                                        width = requisition.get(f'_width_{idx}', 0)
+                                        vis_marker = "✓" if visible else "✗"
+                                        print(f"  {vis_marker} [{idx:2d}] {header:20s} = {value}")
+                                    print("="*80 + "\n")
+
+                                # Apply status filter
+                                if status_filter != 'all':
+                                    status_value = requisition.get('status') or requisition.get('column_3') or ''
+                                    if status_value.lower() != status_filter.lower():
+                                        continue
+
+                                requisitions.append(requisition)
+                                items_scraped += 1
+
+                                if items_scraped % 10 == 0:
+                                    print(f"  ... scraped {items_scraped} requisitions so far")
+
+                            except Exception as e:
+                                logger.warning(f'Error parsing JS row: {str(e)}')
+                                continue
+                    else:
+                        logger.warning("No data from JavaScript extraction, falling back to Selenium")
+                        raise Exception("No JS data")
+
+                except Exception as js_error:
+                    logger.warning(f"JavaScript extraction failed: {js_error}, using Selenium fallback")
+
+                    # Fallback to original Selenium method
+                    for row_index, row in enumerate(rows):
+                        if items_scraped >= max_items:
+                            break
+
+                        try:
+                            cells = row.find_elements(By.TAG_NAME, 'td')
+
+                            if len(cells) < 2:
                                 continue
 
-                        requisitions.append(requisition)
-                        items_scraped += 1
+                            # Extract ALL data from ALL cells with proper header mapping
+                            requisition = {
+                                '_headers': headers,
+                                '_column_count': len(cells)
+                            }
 
-                        if items_scraped % 10 == 0:
-                            print(f"  ... scraped {items_scraped} requisitions so far")
+                            # Map each cell to its header name
+                            for idx, cell in enumerate(cells):
+                                cell_text = self._safe_get_text(cells, idx)
 
-                    except Exception as e:
-                        logger.warning(f'Error parsing row {row_index}: {str(e)}')
-                        continue
+                                # Use header mapping if available
+                                if idx in header_mapping:
+                                    normalized_key = header_mapping[idx]['normalized']
+                                    requisition[normalized_key] = cell_text
+                                elif headers and idx < len(headers):
+                                    key = headers[idx].lower().replace(' ', '_').replace('#', 'num').replace('&', 'and').replace('-', '_')
+                                    requisition[key] = cell_text
+                                else:
+                                    requisition[f'column_{idx}'] = cell_text
+
+                            requisitions.append(requisition)
+                            items_scraped += 1
+
+                        except Exception as e:
+                            logger.warning(f'Error parsing row {row_index}: {str(e)}')
+                            continue
 
                 # Check for next page - try multiple methods
                 has_next_page = False

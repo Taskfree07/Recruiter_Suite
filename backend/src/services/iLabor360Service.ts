@@ -368,42 +368,50 @@ class ILabor360Service {
         });
 
         if (existingJob) {
-          // Update existing job
-          existingJob.title = req.title;
-          existingJob.description = req.description;
-          existingJob.company = req.company;
-          existingJob.requiredSkills = req.requiredSkills;
-          existingJob.experienceYears = req.experienceYears;
-          existingJob.experienceLevel = req.experienceLevel;
-          existingJob.location = req.location;
-          existingJob.locationType = req.locationType;
-          existingJob.status = req.status;
-          
-          // Update source sync date
+          // Update existing job with ALL fields including new ones
+          existingJob.title = req.title || existingJob.title;
+          existingJob.description = req.description || existingJob.description;
+          existingJob.company = req.company || existingJob.company;
+          existingJob.requiredSkills = req.requiredSkills || existingJob.requiredSkills;
+          existingJob.experienceYears = req.experienceYears || existingJob.experienceYears;
+          existingJob.experienceLevel = req.experienceLevel || existingJob.experienceLevel;
+          existingJob.location = req.location || existingJob.location;
+          existingJob.locationType = req.locationType || existingJob.locationType;
+          existingJob.status = req.status || existingJob.status;
+          existingJob.positions = req.positions || existingJob.positions;
+          existingJob.department = req.department || existingJob.department;
+          existingJob.recruiterAssigned = req.recruiterAssigned || existingJob.recruiterAssigned;
+          existingJob.closingDate = req.closingDate || existingJob.closingDate;
+
+          // Update source metadata with ALL scraped fields
           const sourceIndex = existingJob.sources.findIndex(
             (s: any) => s.type === 'ilabor360' && s.id === sourceId
           );
           if (sourceIndex >= 0) {
             existingJob.sources[sourceIndex].syncDate = new Date();
+            existingJob.sources[sourceIndex].metadata = req.source?.metadata || existingJob.sources[sourceIndex].metadata;
           }
 
           await existingJob.save();
           updated++;
         } else {
-          // Create new job
+          // Create new job with ALL available fields
           const newJob = new UnifiedJob({
             title: req.title,
             description: req.description,
             company: req.company,
-            requiredSkills: req.requiredSkills,
+            requiredSkills: req.requiredSkills || [],
             niceToHaveSkills: req.niceToHaveSkills || [],
-            experienceYears: req.experienceYears,
-            experienceLevel: req.experienceLevel,
-            location: req.location,
-            locationType: req.locationType,
-            status: req.status,
+            experienceYears: req.experienceYears || { min: 0, max: 10 },
+            experienceLevel: req.experienceLevel || 'Mid',
+            location: req.location || 'Remote',
+            locationType: req.locationType || 'remote',
+            status: req.status || 'open',
             postedDate: req.postedDate || new Date(),
             closingDate: req.closingDate,
+            positions: req.positions || 1,
+            department: req.department,
+            recruiterAssigned: req.recruiterAssigned,
             sources: [
               {
                 type: 'ilabor360',
@@ -414,8 +422,7 @@ class ILabor360Service {
               }
             ],
             source: 'ilabor360',
-            priority: 'medium',
-            positions: 1
+            priority: 'medium'
           });
 
           await newJob.save();

@@ -92,12 +92,18 @@ const ResumeDashboard: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [ceipalConnected, setCeipalConnected] = useState(false);
   const [ceipalSyncing, setCeipalSyncing] = useState(false);
+  const [outlookConnected, setOutlookConnected] = useState(false);
+  const [outlookSyncing, setOutlookSyncing] = useState(false);
+  const [showOutlookModal, setShowOutlookModal] = useState(false);
+  const [outlookSyncPeriod, setOutlookSyncPeriod] = useState<'lastMonth' | 'all'>('lastMonth');
 
   // Fetch dashboard stats and integration status
   useEffect(() => {
     fetchStats();
     fetchCategories();
     checkCeipalStatus();
+    checkOutlookStatus();
+    checkOutlookCallback();
   }, []);
 
   // Fetch resumes when filters change
@@ -258,6 +264,158 @@ const ResumeDashboard: React.FC = () => {
     }
   };
 
+  // Outlook Functions
+  const checkOutlookStatus = async () => {
+    try {
+      const userId = 'default-user';
+      const response = await axios.get(`${API_URL}/outlook/status`, {
+        params: { userId }
+      });
+
+      if (response.data.authenticated) {
+        setOutlookConnected(true);
+      }
+    } catch (error) {
+      console.error('Error checking Outlook status:', error);
+    }
+  };
+
+  const checkOutlookCallback = () => {
+    // Check if redirected from Outlook OAuth
+    const params = new URLSearchParams(window.location.search);
+    const outlookConnected = params.get('outlook_connected');
+    const outlookError = params.get('outlook_error');
+
+    if (outlookConnected === 'true') {
+      setOutlookConnected(true);
+      alert('✅ Successfully connected to Outlook!');
+      // Clean URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+    } else if (outlookError) {
+      alert(`❌ Outlook connection failed: ${outlookError}`);
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  };
+
+  const handleConnectOutlook = async () => {
+    try {
+      const userId = 'default-user';
+      const response = await axios.get(`${API_URL}/outlook/auth/login`, {
+        params: { userId }
+      });
+
+      if (response.data.authUrl) {
+        // Redirect to Microsoft login
+        window.location.href = response.data.authUrl;
+      }
+    } catch (error: any) {
+      console.error('Error connecting to Outlook:', error);
+      alert(error.response?.data?.error || 'Failed to connect to Outlook. Please try again.');
+    }
+  };
+
+  const handleSyncOutlook = async () => {
+    if (!outlookConnected) {
+      const goToConnect = window.confirm(
+        'Outlook is not connected.\n\n' +
+        'Click OK to connect your Outlook account.'
+      );
+
+      if (goToConnect) {
+        handleConnectOutlook();
+      }
+      return;
+    }
+
+    // Show sync options modal
+    setShowOutlookModal(true);
+  };
+
+  const executeSyncOutlook = async () => {
+    try {
+      setOutlookSyncing(true);
+      setShowOutlookModal(false);
+
+      const userId = 'default-user';
+      const response = await axios.post(`${API_URL}/outlook/sync`, {
+        userId,
+        syncPeriod: outlookSyncPeriod
+      });
+
+      if (response.data.success) {
+        const message = `✅ Outlook Sync Complete!\n\n` +
+          `Resumes Synced: ${response.data.resumesProcessed}\n` +
+          `${response.data.errors && response.data.errors.length > 0 ?
+            `\n⚠️ Errors: ${response.data.errors.length}` : ''}`;
+
+        alert(message);
+        fetchStats();
+        fetchCategories();
+        fetchRecentResumes();
+      }
+    } catch (error: any) {
+      console.error('Error syncing Outlook:', error);
+
+      if (error.response?.status === 401) {
+        setOutlookConnected(false);
+        alert('❌ Session expired. Please reconnect to Outlook.');
+      } else {
+        alert(error.response?.data?.error || 'Failed to sync with Outlook. Please try again.');
+      }
+    } finally {
+      setOutlookSyncing(false);
+    }
+  };
+
+  const handleDisconnectOutlook = async () => {
+    const confirmation = window.confirm(
+      '🔌 Disconnect from Outlook?\n\n' +
+      'This will log you out but won\'t delete any synced resumes.'
+    );
+
+    if (!confirmation) return;
+
+    try {
+      const userId = 'default-user';
+      const response = await axios.delete(`${API_URL}/outlook/disconnect`, {
+        data: { userId }
+      });
+
+      if (response.data.success) {
+        setOutlookConnected(false);
+        alert('✅ Successfully disconnected from Outlook!');
+      }
+    } catch (error: any) {
+      console.error('Error disconnecting Outlook:', error);
+      alert(`❌ Failed to disconnect: ${error.response?.data?.error || error.message}`);
+    }
+  };
+
+  const handleClearOutlookData = async () => {
+    const confirmation = window.confirm(
+      '⚠️ WARNING: This will delete all Outlook-synced resumes!\n\n' +
+      'Are you sure you want to continue?'
+    );
+
+    if (!confirmation) return;
+
+    try {
+      setLoading(true);
+      const response = await axios.delete(`${API_URL}/outlook/resumes/clear`);
+
+      alert(`✅ Success! ${response.data.deletedCount} Outlook resume(s) deleted.`);
+
+      fetchStats();
+      fetchCategories();
+      fetchRecentResumes();
+    } catch (error: any) {
+      console.error('Error clearing Outlook data:', error);
+      alert(`❌ Failed to clear Outlook data: ${error.response?.data?.error || error.message}`);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleClearAllData = async () => {
     const confirmation = window.confirm(
       '⚠️ WARNING: This will permanently delete ALL resumes from the database!\n\n' +
@@ -406,6 +564,21 @@ const ResumeDashboard: React.FC = () => {
               >
                 <StarIcon className="h-5 w-5" />
                 <span>{ceipalSyncing ? 'Syncing...' : ceipalConnected ? 'Sync Ceipal' : 'Ceipal'}</span>
+              </button>
+
+              {/* Outlook Integration */}
+              <button
+                onClick={handleSyncOutlook}
+                disabled={outlookSyncing}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg disabled:opacity-50 transition-all ${
+                  outlookConnected
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+                title={outlookConnected ? 'Sync resumes from Outlook' : 'Click to connect Outlook'}
+              >
+                <EnvelopeIcon className="h-5 w-5" />
+                <span>{outlookSyncing ? 'Syncing...' : outlookConnected ? 'Sync Outlook' : 'Connect Outlook'}</span>
               </button>
 
               {/* Upload */}
@@ -771,6 +944,86 @@ const ResumeDashboard: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* Outlook Sync Modal */}
+      {showOutlookModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg shadow-xl p-6 max-w-md w-full mx-4">
+            <h3 className="text-xl font-bold text-gray-900 mb-4">Sync Outlook Resumes</h3>
+
+            <p className="text-sm text-gray-600 mb-4">
+              Choose how far back to sync resumes from your Outlook emails:
+            </p>
+
+            <div className="space-y-3 mb-6">
+              <label className="flex items-center space-x-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="syncPeriod"
+                  value="lastMonth"
+                  checked={outlookSyncPeriod === 'lastMonth'}
+                  onChange={(e) => setOutlookSyncPeriod(e.target.value as 'lastMonth' | 'all')}
+                  className="w-4 h-4 text-blue-600"
+                />
+                <div>
+                  <div className="font-semibold text-gray-900">Last Month</div>
+                  <div className="text-sm text-gray-600">Sync resumes from the past 30 days</div>
+                </div>
+              </label>
+
+              <label className="flex items-center space-x-3 p-3 border-2 rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
+                <input
+                  type="radio"
+                  name="syncPeriod"
+                  value="all"
+                  checked={outlookSyncPeriod === 'all'}
+                  onChange={(e) => setOutlookSyncPeriod(e.target.value as 'lastMonth' | 'all')}
+                  className="w-4 h-4 text-blue-600"
+                />
+                <div>
+                  <div className="font-semibold text-gray-900">All Emails</div>
+                  <div className="text-sm text-gray-600">Sync all resumes from your inbox</div>
+                </div>
+              </label>
+            </div>
+
+            <div className="flex space-x-3">
+              <button
+                onClick={() => setShowOutlookModal(false)}
+                className="flex-1 px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={executeSyncOutlook}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Start Sync
+              </button>
+            </div>
+
+            {outlookConnected && (
+              <div className="mt-4 pt-4 border-t border-gray-200 space-y-2">
+                <button
+                  onClick={() => {
+                    setShowOutlookModal(false);
+                    handleDisconnectOutlook();
+                  }}
+                  className="w-full px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-sm font-medium"
+                >
+                  🔌 Logout from Outlook
+                </button>
+                <button
+                  onClick={handleClearOutlookData}
+                  className="w-full px-4 py-2 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors text-sm"
+                >
+                  Clear Outlook Resumes
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 };
