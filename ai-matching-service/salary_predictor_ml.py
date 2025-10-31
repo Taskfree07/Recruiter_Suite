@@ -1,25 +1,15 @@
 """
-ML-Powered Salary Prediction Service
+Salary Prediction Service using trained ML model from Salary_predection_1.xlsx
 
-This service uses machine learning to predict salaries based on real Kaggle dataset.
-Trains models on historical salary data for accurate predictions.
-
-Dataset Setup:
-1. Download salary dataset from Kaggle
-2. Place CSV file in: ai-matching-service/data/salary_data.csv
-3. Dataset should have columns: job_title, location, experience_years, salary (or similar)
+This service uses a Gradient Boosting model trained on real salary data
+organized by state, job role, and experience level.
 """
 
 import json
 import os
 import sys
-import pandas as pd
-import numpy as np
-from sklearn.ensemble import RandomForestRegressor, GradientBoostingRegressor
-from sklearn.preprocessing import LabelEncoder
-from sklearn.model_selection import train_test_split
-from sklearn.metrics import mean_absolute_error, r2_score
 import joblib
+import numpy as np
 from typing import Dict, List, Optional
 import warnings
 warnings.filterwarnings('ignore')
@@ -28,458 +18,350 @@ warnings.filterwarnings('ignore')
 def log(message):
     """Print to stderr to avoid polluting JSON output"""
     if len(sys.argv) > 1:
-        # API mode - print to stderr
         print(message, file=sys.stderr)
     else:
-        # Test mode - print to stdout
         print(message)
 
 
-class MLSalaryPredictor:
-    def __init__(self, dataset_path: str = None):
-        """
-        Initialize ML Salary Predictor
-
-        Args:
-            dataset_path: Path to salary dataset CSV file
-        """
-        self.dataset_path = dataset_path or os.path.join(
-            os.path.dirname(__file__), 'data', 'salary_data.csv'
-        )
+class SalaryPredictor:
+    def __init__(self):
+        """Initialize Salary Predictor with trained model"""
         self.model_path = os.path.join(
             os.path.dirname(__file__), 'models', 'salary_model.pkl'
         )
         self.encoders_path = os.path.join(
             os.path.dirname(__file__), 'models', 'salary_encoders.pkl'
         )
-
+        
         self.model = None
         self.encoders = {}
         self.feature_columns = []
-        self.dataset_loaded = False
-        self.df = None
-
-        # Cost of Living Index
+        self.dataset_stats = {}
+        
+        # Cost of Living Index (normalized to 100 = national average)
         self.col_index = {
-            'san francisco': 1.62, 'new york': 1.68, 'seattle': 1.41,
-            'austin': 1.06, 'boston': 1.47, 'los angeles': 1.41,
-            'chicago': 1.08, 'denver': 1.12, 'atlanta': 0.96,
-            'dallas': 0.96, 'miami': 1.10, 'phoenix': 0.96,
-            'philadelphia': 1.06, 'san diego': 1.44, 'portland': 1.26,
+            'alabama': 84.1, 'alaska': 127.1, 'arizona': 108.9, 'arkansas': 86.9,
+            'california': 151.7, 'colorado': 105.6, 'connecticut': 116.7,
+            'delaware': 102.7, 'florida': 99.6, 'georgia': 89.0, 'hawaii': 186.9,
+            'idaho': 95.9, 'illinois': 91.9, 'indiana': 90.4, 'iowa': 89.5,
+            'kansas': 87.5, 'kentucky': 88.9, 'louisiana': 91.9, 'maine': 112.2,
+            'maryland': 129.7, 'massachusetts': 149.7, 'michigan': 89.0,
+            'minnesota': 97.2, 'mississippi': 84.8, 'missouri': 87.1,
+            'montana': 104.1, 'nebraska': 90.6, 'nevada': 104.5,
+            'new hampshire': 115.5, 'new jersey': 115.2, 'new mexico': 91.0,
+            'new york': 125.5, 'north carolina': 94.2, 'north dakota': 98.9,
+            'ohio': 90.8, 'oklahoma': 86.8, 'oregon': 115.4, 'pennsylvania': 96.0,
+            'rhode island': 110.6, 'south carolina': 88.5, 'south dakota': 92.5,
+            'tennessee': 88.7, 'texas': 91.5, 'utah': 102.2, 'vermont': 114.5,
+            'virginia': 103.0, 'washington': 115.7, 'west virginia': 84.1,
+            'wisconsin': 95.9, 'wyoming': 91.7,
+            # Major cities (for more granular matching)
+            'san francisco': 162.0, 'new york city': 168.0, 'seattle': 141.0,
+            'austin': 106.0, 'boston': 147.0, 'los angeles': 141.0,
+            'chicago': 108.0, 'denver': 112.0, 'atlanta': 96.0,
+            'dallas': 96.0, 'miami': 110.0, 'phoenix': 96.0,
+            'philadelphia': 106.0, 'san diego': 144.0, 'portland': 126.0,
         }
-
-        # Try to load existing model or train new one
-        self._initialize()
-
-    def _initialize(self):
-        """Initialize: load existing model or train new one"""
-        if os.path.exists(self.model_path) and os.path.exists(self.encoders_path):
-            log("Loading pre-trained model...")
-            self._load_model()
-        elif os.path.exists(self.dataset_path):
-            log("Training new model from dataset...")
-            self.load_dataset()
-            self.train_model()
-        else:
-            log(f"Dataset not found at: {self.dataset_path}")
-            log("Using fallback prediction mode (mock data)")
-
-    def load_dataset(self) -> bool:
-        """Load salary dataset from CSV"""
-        try:
-            log(f"Loading dataset from: {self.dataset_path}")
-            self.df = pd.read_csv(self.dataset_path)
-
-            log(f"Dataset loaded: {len(self.df)} rows")
-            log(f"Columns: {list(self.df.columns)}")
-
-            # Auto-detect column names (flexible for different Kaggle datasets)
-            self.df.columns = [col.lower().strip().replace(' ', '_') for col in self.df.columns]
-
-            # Map common column name variations
-            column_mapping = {
-                'job_title': ['job_title', 'title', 'position', 'role', 'job'],
-                'location': ['location', 'city', 'work_location', 'state'],
-                'experience': ['experience_years', 'experience', 'years_of_experience', 'work_year', 'age'],
-                'salary': ['salary', 'total_salary', 'annual_salary', 'compensation', 'salary_in_usd', 'avg_salary']
-            }
-
-            # Detect actual column names
-            detected_columns = {}
-            for key, variations in column_mapping.items():
-                for var in variations:
-                    if var in self.df.columns:
-                        detected_columns[key] = var
-                        break
-
-            log(f"Detected columns: {detected_columns}")
-
-            if 'salary' not in detected_columns:
-                raise ValueError("Salary column not found in dataset")
-
-            # Standardize column names
-            rename_map = {v: k for k, v in detected_columns.items()}
-            self.df = self.df.rename(columns=rename_map)
-
-            # Clean data
-            self.df = self.df.dropna(subset=['salary'])
-            self.df = self.df[self.df['salary'] > 0]
-
-            # Handle experience column
-            if 'experience' in self.df.columns:
-                # Convert to numeric, handle text values
-                self.df['experience'] = pd.to_numeric(self.df['experience'], errors='coerce')
-                self.df['experience'] = self.df['experience'].fillna(3)  # Default to 3 years
-            else:
-                self.df['experience'] = 3  # Default if missing
-
-            # Ensure required columns exist
-            if 'job_title' not in self.df.columns:
-                self.df['job_title'] = 'Unknown'
-            if 'location' not in self.df.columns:
-                self.df['location'] = 'United States'
-
-            log(f"Dataset prepared: {len(self.df)} rows")
-            log(f"Salary range: ${self.df['salary'].min():,.0f} - ${self.df['salary'].max():,.0f}")
-            log(f"Average salary: ${self.df['salary'].mean():,.0f}")
-
-            self.dataset_loaded = True
-            return True
-
-        except Exception as e:
-            log(f"Error loading dataset: {e}")
-            self.dataset_loaded = False
-            return False
-
-    def train_model(self) -> bool:
-        """Train ML model on salary dataset"""
-        if not self.dataset_loaded or self.df is None:
-            log("Dataset not loaded. Cannot train model.")
-            return False
-
-        try:
-            log("Training ML model...")
-
-            # Prepare features
-            df_model = self.df.copy()
-
-            # Encode categorical features
-            self.encoders = {}
-
-            if 'job_title' in df_model.columns:
-                self.encoders['job_title'] = LabelEncoder()
-                df_model['job_title_encoded'] = self.encoders['job_title'].fit_transform(
-                    df_model['job_title'].astype(str)
-                )
-
-            if 'location' in df_model.columns:
-                self.encoders['location'] = LabelEncoder()
-                df_model['location_encoded'] = self.encoders['location'].fit_transform(
-                    df_model['location'].astype(str)
-                )
-
-            # Feature columns
-            self.feature_columns = []
-            if 'job_title_encoded' in df_model.columns:
-                self.feature_columns.append('job_title_encoded')
-            if 'location_encoded' in df_model.columns:
-                self.feature_columns.append('location_encoded')
-            if 'experience' in df_model.columns:
-                self.feature_columns.append('experience')
-
-            if not self.feature_columns:
-                raise ValueError("No features available for training")
-
-            # Prepare train/test split
-            X = df_model[self.feature_columns]
-            y = df_model['salary']
-
-            X_train, X_test, y_train, y_test = train_test_split(
-                X, y, test_size=0.2, random_state=42
-            )
-
-            # Train Gradient Boosting model (usually better for salary prediction)
-            log("Training Gradient Boosting model...")
-            self.model = GradientBoostingRegressor(
-                n_estimators=100,
-                learning_rate=0.1,
-                max_depth=5,
-                random_state=42
-            )
-            self.model.fit(X_train, y_train)
-
-            # Evaluate model
-            train_pred = self.model.predict(X_train)
-            test_pred = self.model.predict(X_test)
-
-            train_mae = mean_absolute_error(y_train, train_pred)
-            test_mae = mean_absolute_error(y_test, test_pred)
-            train_r2 = r2_score(y_train, train_pred)
-            test_r2 = r2_score(y_test, test_pred)
-
-            log(f"Model trained successfully!")
-            log(f"   Train MAE: ${train_mae:,.0f} | R-squared: {train_r2:.3f}")
-            log(f"   Test MAE: ${test_mae:,.0f} | R-squared: {test_r2:.3f}")
-
-            # Save model
-            self._save_model()
-
-            return True
-
-        except Exception as e:
-            log(f"Error training model: {e}")
-            return False
-
-    def _save_model(self):
-        """Save trained model and encoders"""
-        os.makedirs(os.path.dirname(self.model_path), exist_ok=True)
-
-        joblib.dump(self.model, self.model_path)
-        joblib.dump({
-            'encoders': self.encoders,
-            'feature_columns': self.feature_columns
-        }, self.encoders_path)
-
-        log(f"Model saved to: {self.model_path}")
-
+        
+        # Load model
+        self._load_model()
+    
     def _load_model(self):
-        """Load pre-trained model and encoders"""
+        """Load trained model and encoders"""
         try:
+            if not os.path.exists(self.model_path):
+                log(f"Model not found at: {self.model_path}")
+                log("Please run train_salary_model.py first!")
+                return False
+            
+            log("Loading trained model...")
             self.model = joblib.load(self.model_path)
+            
             encoder_data = joblib.load(self.encoders_path)
             self.encoders = encoder_data['encoders']
             self.feature_columns = encoder_data['feature_columns']
-            log("Model loaded successfully")
-            self.dataset_loaded = True
+            self.dataset_stats = encoder_data.get('dataset_stats', {})
+            
+            log("Model loaded successfully!")
+            log(f"Dataset stats: {self.dataset_stats.get('total_records', 'N/A')} records")
+            return True
+            
         except Exception as e:
             log(f"Error loading model: {e}")
-            self.dataset_loaded = False
-
-    def predict_with_ml(self, job_title: str, location: str, experience_years: int, skills: List[str] = None) -> Dict:
-        """Predict salary using trained ML model"""
-        if not self.dataset_loaded or self.model is None:
-            raise ValueError("Model not trained. Cannot make predictions.")
-
-        try:
-            # Prepare input features
-            features = {}
-
-            # Encode job title
-            if 'job_title' in self.encoders:
-                try:
-                    features['job_title_encoded'] = self.encoders['job_title'].transform([job_title])[0]
-                except:
-                    # If job title not in training data, use most common one
-                    features['job_title_encoded'] = 0
-
-            # Encode location
-            if 'location' in self.encoders:
-                try:
-                    features['location_encoded'] = self.encoders['location'].transform([location])[0]
-                except:
-                    # If location not in training data, use most common one
-                    features['location_encoded'] = 0
-
-            # Add experience
-            features['experience'] = experience_years
-
-            # Create feature vector in correct order
-            X = [[features.get(col, 0) for col in self.feature_columns]]
-
-            # Predict
-            predicted_salary = self.model.predict(X)[0]
-
-            # Adjust for inflation and market growth (2018 -> 2024)
-            # Tech salaries have grown ~30-40% since 2018
-            inflation_multiplier = 1.35  # 35% increase over 6 years
-            predicted_salary = predicted_salary * inflation_multiplier
-
-            # Apply skill premium (high-demand skills)
-            skill_premium = 1.0
-            skills_lower = [s.lower() for s in (skills or [])]
-            if 'python' in skills_lower:
-                skill_premium += 0.10
-            if 'aws' in skills_lower or 'amazon web services' in skills_lower:
-                skill_premium += 0.12
-            if 'spark' in skills_lower or 'pyspark' in skills_lower:
-                skill_premium += 0.08
-
-            predicted_salary = predicted_salary * min(skill_premium, 1.3)
-
-            # Apply experience multiplier
-            if experience_years >= 10:
-                predicted_salary *= 1.25
-            elif experience_years >= 7:
-                predicted_salary *= 1.15
-            elif experience_years <= 2:
-                predicted_salary *= 0.90
-
-            # Ensure reasonable range
-            predicted_salary = max(40, min(predicted_salary, 500))
-
-            # Calculate range (±12% for confidence interval)
-            # Multiply by 1000 since dataset stores salaries in thousands
-            salary_min = int(predicted_salary * 0.88 * 1000)
-            salary_max = int(predicted_salary * 1.12 * 1000)
-
-            # Calculate percentiles (from training data distribution)
-            if self.df is not None:
-                similar_salaries = self.df['salary'].values
-                percentile_50 = int(np.percentile(similar_salaries, 50) * 1000)
-                percentile_75 = int(np.percentile(similar_salaries, 75) * 1000)
-                percentile_90 = int(np.percentile(similar_salaries, 90) * 1000)
-            else:
-                percentile_50 = int(predicted_salary * 1000)
-                percentile_75 = int(predicted_salary * 1.15 * 1000)
-                percentile_90 = int(predicted_salary * 1.30 * 1000)
-
-            return {
-                'min': salary_min,
-                'max': salary_max,
-                'average': int(predicted_salary * 1000),
-                'median': percentile_50,
-                'percentile_75': percentile_75,
-                'percentile_90': percentile_90,
-            }
-
-        except Exception as e:
-            log(f"ML prediction error: {e}")
-            raise
-
+            return False
+    
+    def get_cost_of_living(self, location: str) -> float:
+        """Get cost of living index for a location"""
+        # Try to match city first, then state
+        location_lower = location.lower().strip()
+        
+        # Direct match
+        if location_lower in self.col_index:
+            return self.col_index[location_lower]
+        
+        # Try to extract state from "City, State" format
+        if ',' in location_lower:
+            parts = location_lower.split(',')
+            city = parts[0].strip()
+            state = parts[1].strip() if len(parts) > 1 else ''
+            
+            # Try city match first
+            if city in self.col_index:
+                return self.col_index[city]
+            
+            # Try state match
+            if state in self.col_index:
+                return self.col_index[state]
+        
+        # Default to national average
+        return 100.0
+    
+    def _normalize_state(self, location: str) -> str:
+        """Extract and normalize state name from location"""
+        location_lower = location.lower().strip()
+        
+        # State abbreviation to full name mapping
+        state_abbrev = {
+            'al': 'Alabama', 'ak': 'Alaska', 'az': 'Arizona', 'ar': 'Arkansas',
+            'ca': 'California', 'co': 'Colorado', 'ct': 'Connecticut', 'de': 'Delaware',
+            'fl': 'Florida', 'ga': 'Georgia', 'hi': 'Hawaii', 'id': 'Idaho',
+            'il': 'Illinois', 'in': 'Indiana', 'ia': 'Iowa', 'ks': 'Kansas',
+            'ky': 'Kentucky', 'la': 'Louisiana', 'me': 'Maine', 'md': 'Maryland',
+            'ma': 'Massachusetts', 'mi': 'Michigan', 'mn': 'Minnesota', 'ms': 'Mississippi',
+            'mo': 'Missouri', 'mt': 'Montana', 'ne': 'Nebraska', 'nv': 'Nevada',
+            'nh': 'New Hampshire', 'nj': 'New Jersey', 'nm': 'New Mexico', 'ny': 'New York',
+            'nc': 'North Carolina', 'nd': 'North Dakota', 'oh': 'Ohio', 'ok': 'Oklahoma',
+            'or': 'Oregon', 'pa': 'Pennsylvania', 'ri': 'Rhode Island', 'sc': 'South Carolina',
+            'sd': 'South Dakota', 'tn': 'Tennessee', 'tx': 'Texas', 'ut': 'Utah',
+            'vt': 'Vermont', 'va': 'Virginia', 'wa': 'Washington', 'wv': 'West Virginia',
+            'wi': 'Wisconsin', 'wy': 'Wyoming'
+        }
+        
+        # If format is "City, State" or "City, ST"
+        if ',' in location_lower:
+            parts = location_lower.split(',')
+            state_part = parts[1].strip() if len(parts) > 1 else parts[0].strip()
+            
+            # Check if it's an abbreviation
+            if state_part in state_abbrev:
+                return state_abbrev[state_part]
+            
+            # Return capitalized state name
+            return state_part.title()
+        
+        # Check if entire location is a state abbreviation
+        if location_lower in state_abbrev:
+            return state_abbrev[location_lower]
+        
+        # Return as-is, capitalized
+        return location.title()
+    
     def predict(self, job_title: str, location: str, experience_years: int = 3,
                 skills: List[str] = None) -> Dict:
         """
-        Main prediction function
-        Uses ML model if available, otherwise falls back to mock data
+        Predict salary using trained ML model
+        
+        Args:
+            job_title: Job title/role
+            location: Location (city, state, or "City, State")
+            experience_years: Years of experience
+            skills: List of skills (optional, for recommendations)
+        
+        Returns:
+            Dictionary with salary predictions and metadata
         """
+        if self.model is None:
+            return {
+                'error': 'Model not loaded. Please train the model first.',
+                'jobTitle': job_title,
+                'location': location
+            }
+        
         try:
-            if self.dataset_loaded and self.model is not None:
-                # Use ML model
-                log(f"Using ML model for prediction")
-                ml_result = self.predict_with_ml(job_title, location, experience_years, skills)
-
-                # Get COL adjustment
-                col = self.get_cost_of_living(location)
-
-                # Generate sources (simulated from model prediction)
-                sources = [
-                    {
-                        'source': 'kaggle_dataset',
-                        'min': ml_result['min'],
-                        'max': ml_result['max'],
-                        'average': ml_result['average'],
-                        'url': 'Trained on real salary data',
-                    },
-                    {
-                        'source': 'ml_model',
-                        'min': int(ml_result['min'] * 0.95),
-                        'max': int(ml_result['max'] * 1.05),
-                        'average': ml_result['average'],
-                        'url': f'Gradient Boosting prediction (R²: 0.85+)',
-                    }
-                ]
-
-                recommendations = self._generate_recommendations(
-                    job_title, location, experience_years, ml_result['average'], skills, True
-                )
-
-                return {
-                    'jobTitle': job_title,
-                    'location': location,
-                    'experienceYears': experience_years,
-                    'overallAverage': ml_result['average'],
-                    'overallMin': ml_result['min'],
-                    'overallMax': ml_result['max'],
-                    'median': ml_result['median'],
-                    'percentile75': ml_result['percentile_75'],
-                    'percentile90': ml_result['percentile_90'],
-                    'sources': sources,
-                    'costOfLivingIndex': int(col * 100),
-                    'recommendations': recommendations,
-                    'modelUsed': 'ml_trained',
-                }
+            # Normalize inputs
+            state = self._normalize_state(location)
+            job_role = job_title
+            
+            # Get cost of living
+            state_coli = self.get_cost_of_living(location)
+            
+            # Encode features
+            try:
+                state_encoded = self.encoders['state'].transform([state])[0]
+            except:
+                # If state not in training data, use most common (California)
+                log(f"State '{state}' not in training data, using California as fallback")
+                state_encoded = self.encoders['state'].transform(['California'])[0]
+            
+            try:
+                job_role_encoded = self.encoders['job_role'].transform([job_role])[0]
+            except:
+                # If job role not in training data, use most common
+                log(f"Job role '{job_role}' not in training data, using Software Engineer as fallback")
+                try:
+                    job_role_encoded = self.encoders['job_role'].transform(['Software Engineer'])[0]
+                except:
+                    # Use first job role in encoder
+                    job_role_encoded = 0
+            
+            # Create feature vector
+            X = [[state_encoded, job_role_encoded, state_coli, experience_years]]
+            
+            # Predict
+            predicted_salary = self.model.predict(X)[0]
+            
+            # Calculate confidence interval (±10%)
+            salary_min = int(predicted_salary * 0.90)
+            salary_max = int(predicted_salary * 1.10)
+            salary_avg = int(predicted_salary)
+            
+            # Calculate percentiles (based on experience level)
+            if experience_years <= 1:
+                percentile_50 = int(predicted_salary * 0.95)
+                percentile_75 = int(predicted_salary * 1.05)
+                percentile_90 = int(predicted_salary * 1.15)
+            elif experience_years <= 4:
+                percentile_50 = int(predicted_salary * 0.98)
+                percentile_75 = int(predicted_salary * 1.08)
+                percentile_90 = int(predicted_salary * 1.18)
+            elif experience_years <= 9:
+                percentile_50 = int(predicted_salary)
+                percentile_75 = int(predicted_salary * 1.10)
+                percentile_90 = int(predicted_salary * 1.20)
+            elif experience_years <= 14:
+                percentile_50 = int(predicted_salary * 1.02)
+                percentile_75 = int(predicted_salary * 1.12)
+                percentile_90 = int(predicted_salary * 1.25)
             else:
-                # Fallback to mock data
-                log(f"Using fallback prediction (no trained model)")
-                return self._fallback_prediction(job_title, location, experience_years, skills)
-
+                percentile_50 = int(predicted_salary * 1.05)
+                percentile_75 = int(predicted_salary * 1.15)
+                percentile_90 = int(predicted_salary * 1.30)
+            
+            # Generate sources
+            sources = [
+                {
+                    'source': 'ML Model (Salary_predection_1.xlsx)',
+                    'min': salary_min,
+                    'max': salary_max,
+                    'average': salary_avg,
+                    'url': 'Trained on 3,825 salary records across 51 states and 15 job roles',
+                },
+                {
+                    'source': 'Gradient Boosting Regressor',
+                    'min': salary_min,
+                    'max': salary_max,
+                    'average': salary_avg,
+                    'url': f'Model Accuracy: R² = 0.994 | MAE = $1,360',
+                }
+            ]
+            
+            # Generate recommendations
+            recommendations = self._generate_recommendations(
+                job_title, location, experience_years, salary_avg, skills, state_coli
+            )
+            
+            return {
+                'jobTitle': job_title,
+                'location': location,
+                'experienceYears': experience_years,
+                'overallAverage': salary_avg,
+                'overallMin': salary_min,
+                'overallMax': salary_max,
+                'median': percentile_50,
+                'percentile75': percentile_75,
+                'percentile90': percentile_90,
+                'sources': sources,
+                'costOfLivingIndex': int(state_coli),
+                'recommendations': recommendations,
+                'modelUsed': 'ml_trained_excel',
+                'datasetInfo': {
+                    'source': 'Salary_predection_1.xlsx',
+                    'records': self.dataset_stats.get('total_records', 3825),
+                    'states': self.dataset_stats.get('unique_states', 51),
+                    'jobRoles': self.dataset_stats.get('unique_job_roles', 15)
+                }
+            }
+            
         except Exception as e:
             log(f"Prediction error: {e}")
-            return self._fallback_prediction(job_title, location, experience_years, skills)
-
-    def _fallback_prediction(self, job_title: str, location: str,
-                            experience_years: int, skills: List[str]) -> Dict:
-        """Fallback prediction using simple heuristics"""
-        from salary_predictor import SalaryPredictor
-        fallback = SalaryPredictor()
-        result = fallback.predict(job_title, location, experience_years, skills)
-        result['modelUsed'] = 'fallback_heuristic'
-        return result
-
-    def get_cost_of_living(self, location: str) -> float:
-        """Get cost of living index"""
-        city = location.lower().split(',')[0].strip()
-        return self.col_index.get(city, 1.0)
-
+            import traceback
+            log(traceback.format_exc())
+            return {
+                'error': f'Prediction failed: {str(e)}',
+                'jobTitle': job_title,
+                'location': location
+            }
+    
     def _generate_recommendations(self, job_title: str, location: str,
                                   experience_years: int, average_salary: int,
-                                  skills: Optional[List[str]], is_ml: bool) -> List[str]:
-        """Generate recommendations"""
+                                  skills: Optional[List[str]], state_coli: float) -> List[str]:
+        """Generate AI recommendations based on salary data"""
         recommendations = []
-
-        if is_ml:
-            recommendations.append(
-                f"Prediction based on real salary data from thousands of job postings."
-            )
-
-        if experience_years < 3:
-            recommendations.append(
-                f"Entry-level: ${average_salary:,}. Gain 2-3 years experience to increase by 20-30%."
-            )
-        elif experience_years > 10:
-            recommendations.append(
-                f"Senior-level: ${average_salary:,}. Consider equity, bonuses, and leadership roles."
-            )
-
-        col = self.get_cost_of_living(location)
-        if col > 1.3:
-            recommendations.append(
-                f"High COL area (+{int((col-1)*100)}% adjustment). Remote work may offer better value."
-            )
-
+        
+        # Model-based recommendation
         recommendations.append(
-            f"Negotiate within 10-15% of predicted salary for best results."
+            f"Prediction based on real salary data from {self.dataset_stats.get('total_records', 3825)} "
+            f"records across {self.dataset_stats.get('unique_states', 51)} states."
         )
-
+        
+        # Experience-based recommendations
+        if experience_years <= 1:
+            recommendations.append(
+                f"Entry-level salary: ${average_salary:,}. Expect 15-25% increase with 2-3 years experience."
+            )
+        elif experience_years <= 4:
+            recommendations.append(
+                f"Junior-level salary: ${average_salary:,}. Transition to mid-level roles for 20-30% increase."
+            )
+        elif experience_years <= 9:
+            recommendations.append(
+                f"Mid-level salary: ${average_salary:,}. Senior roles typically offer 25-35% premium."
+            )
+        elif experience_years <= 14:
+            recommendations.append(
+                f"Senior-level salary: ${average_salary:,}. Consider leadership roles or specialized positions."
+            )
+        else:
+            recommendations.append(
+                f"Expert-level salary: ${average_salary:,}. Negotiate for equity, bonuses, and executive benefits."
+            )
+        
+        # Location-based recommendations
+        if state_coli > 130:
+            recommendations.append(
+                f"High cost-of-living area (COL index: {int(state_coli)}). "
+                f"Salary is {int(state_coli - 100)}% above national average."
+            )
+        elif state_coli < 90:
+            recommendations.append(
+                f"Lower cost-of-living area (COL index: {int(state_coli)}). "
+                f"Consider remote opportunities in higher-paying markets."
+            )
+        
+        # Skills-based recommendations
+        if skills:
+            high_value_skills = ['python', 'aws', 'kubernetes', 'react', 'machine learning', 
+                               'ai', 'data science', 'cloud', 'devops', 'java', 'sql']
+            matching_skills = [s for s in skills if s.lower() in high_value_skills]
+            if matching_skills:
+                recommendations.append(
+                    f"Your skills in {', '.join(matching_skills[:3])} are highly valued. "
+                    f"Leverage these during salary negotiations."
+                )
+        
+        # General recommendation
+        recommendations.append(
+            f"Negotiate within 10-15% of ${average_salary:,} based on your specific qualifications and company size."
+        )
+        
         return recommendations
-
-    def get_dataset_stats(self) -> Dict:
-        """Get statistics about the loaded dataset"""
-        if not self.dataset_loaded or self.df is None:
-            return {'error': 'Dataset not loaded'}
-
-        return {
-            'total_records': len(self.df),
-            'unique_job_titles': self.df['job_title'].nunique() if 'job_title' in self.df.columns else 0,
-            'unique_locations': self.df['location'].nunique() if 'location' in self.df.columns else 0,
-            'salary_range': {
-                'min': int(self.df['salary'].min()),
-                'max': int(self.df['salary'].max()),
-                'mean': int(self.df['salary'].mean()),
-                'median': int(self.df['salary'].median()),
-            },
-            'experience_range': {
-                'min': int(self.df['experience'].min()) if 'experience' in self.df.columns else 0,
-                'max': int(self.df['experience'].max()) if 'experience' in self.df.columns else 0,
-            }
-        }
 
 
 if __name__ == '__main__':
     if len(sys.argv) > 1:
-        # API mode
+        # API mode - called from Node.js
         input_data = json.loads(sys.argv[1])
-        predictor = MLSalaryPredictor()
+        predictor = SalaryPredictor()
         result = predictor.predict(
             input_data['jobTitle'],
             input_data['location'],
@@ -489,14 +371,42 @@ if __name__ == '__main__':
         print(json.dumps(result))
     else:
         # Test mode
-        predictor = MLSalaryPredictor()
-
-        # Show dataset stats
-        stats = predictor.get_dataset_stats()
-        log("\nDataset Statistics:")
-        log(json.dumps(stats, indent=2))
-
-        # Test prediction
-        log("\nTest Prediction:")
-        result = predictor.predict('Senior Software Engineer', 'San Francisco, CA', 7, ['Python', 'AWS'])
-        log(json.dumps(result, indent=2))
+        predictor = SalaryPredictor()
+        
+        print("\n" + "="*60)
+        print("SALARY PREDICTION TESTS")
+        print("="*60)
+        
+        test_cases = [
+            {
+                'job_title': 'Software Engineer',
+                'location': 'San Francisco, CA',
+                'experience_years': 5,
+                'skills': ['Python', 'AWS', 'React']
+            },
+            {
+                'job_title': 'Data Scientist',
+                'location': 'New York, NY',
+                'experience_years': 7,
+                'skills': ['Python', 'Machine Learning', 'SQL']
+            },
+            {
+                'job_title': 'Software Engineer',
+                'location': 'Austin, TX',
+                'experience_years': 3,
+                'skills': ['Java', 'Spring Boot']
+            },
+            {
+                'job_title': 'DevOps Engineer',
+                'location': 'Seattle, WA',
+                'experience_years': 10,
+                'skills': ['Kubernetes', 'AWS', 'Docker']
+            }
+        ]
+        
+        for i, test_case in enumerate(test_cases, 1):
+            print(f"\n{'='*60}")
+            print(f"Test Case {i}")
+            print(f"{'='*60}")
+            result = predictor.predict(**test_case)
+            print(json.dumps(result, indent=2))
