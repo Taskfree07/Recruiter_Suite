@@ -64,6 +64,7 @@ router.get('/stats/overview', async (req: Request, res: Response): Promise<void>
 router.get('/', async (req: Request, res: Response): Promise<void> => {
   try {
     const {
+      userId = 'default-user', // Multi-tenant support
       source,       // Filter by source: 'outlook', 'ceipal', 'manual', etc.
       status,       // Filter by status: 'open', 'closed', 'filled', 'on-hold'
       search,       // Search in title, company, description
@@ -74,7 +75,9 @@ router.get('/', async (req: Request, res: Response): Promise<void> => {
     } = req.query;
 
     // Build filter query
-    const filter: any = {};
+    const filter: any = {
+      userId: userId // Filter by user
+    };
 
     if (source && source !== 'all') {
       filter.source = source;

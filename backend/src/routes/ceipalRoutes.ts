@@ -13,11 +13,20 @@ router.get('/config', async (req: Request, res: Response): Promise<void> => {
     const userId = (req.query.userId as string) || 'default-user';
     const config = await ceipalService.getOrCreateConfig(userId);
 
+    // Check if Ceipal is properly configured
+    const isConfigured = !config.mockMode &&
+                         config.apiKey &&
+                         config.apiKey !== 'MOCK_API_KEY' &&
+                         config.username &&
+                         config.password &&
+                         config.resumeApiUrl;
+
     res.json({
       success: true,
       config: {
         ...config.toObject(),
-        apiKey: config.mockMode ? config.apiKey : '********' // Hide real API key
+        apiKey: config.mockMode ? config.apiKey : '********', // Hide real API key
+        isConfigured: isConfigured
       }
     });
 
@@ -95,23 +104,32 @@ router.post('/sync-jobs', async (req: Request, res: Response): Promise<void> => 
 
 /**
  * GET /api/ceipal/jobs
- * Get all jobs synced from Ceipal
+ * Get all jobs synced from Ceipal with advanced filtering
  */
 router.get('/jobs', async (req: Request, res: Response): Promise<void> => {
   try {
     const {
+      userId = 'default-user',
       status,
       experienceLevel,
       locationType,
       skill,
+      position_title,
+      job_status,
+      assigned_recruiter,
+      industry,
+      job_category,
+      job_type,
       limit = '50',
       offset = '0'
     } = req.query;
 
     const query: any = {
-      'sources.type': 'ceipal'
+      'sources.type': 'ceipal',
+      userId: userId // Filter by user
     };
 
+    // Basic filters (existing)
     if (status) {
       query.status = status;
     }
@@ -126,6 +144,31 @@ router.get('/jobs', async (req: Request, res: Response): Promise<void> => {
 
     if (skill) {
       query.requiredSkills = { $in: [skill] };
+    }
+
+    // Advanced filters (from screenshot)
+    if (position_title) {
+      query.title = { $regex: position_title, $options: 'i' };
+    }
+
+    if (job_status) {
+      query.status = job_status;
+    }
+
+    if (assigned_recruiter) {
+      query.assignedRecruiter = assigned_recruiter;
+    }
+
+    if (industry) {
+      query.industry = industry;
+    }
+
+    if (job_category) {
+      query.department = job_category;
+    }
+
+    if (job_type) {
+      query.jobType = job_type;
     }
 
     const jobs = await UnifiedJob.find(query)
@@ -176,6 +219,81 @@ router.get('/jobs/:id', async (req: Request, res: Response): Promise<void> => {
   } catch (error: any) {
     console.error('Get job error:', error);
     res.status(500).json({ error: error.message });
+  }
+});
+
+/**
+ * GET /api/ceipal/candidates
+ * Fetch candidates from Ceipal API with filtering
+ */
+router.get('/candidates', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId = 'default-user' } = req.query;
+
+    // Extract filters from query parameters (based on screenshot rules)
+    const filters: any = {};
+
+    if (req.query.skills) {
+      filters.skills = (req.query.skills as string).split(',');
+    }
+    if (req.query.country) {
+      filters.country = req.query.country;
+    }
+    if (req.query.postal_code) {
+      filters.postal_code = req.query.postal_code;
+    }
+    if (req.query.work_authorization) {
+      filters.work_authorization = req.query.work_authorization;
+    }
+    if (req.query.applicant_status) {
+      filters.applicant_status = req.query.applicant_status;
+    }
+    if (req.query.modifiedAfter) {
+      filters.modifiedAfter = new Date(req.query.modifiedAfter as string);
+    }
+    if (req.query.modifiedBefore) {
+      filters.modifiedBefore = new Date(req.query.modifiedBefore as string);
+    }
+    if (req.query.experience) {
+      filters.experience = parseInt(req.query.experience as string);
+    }
+
+    const candidates = await ceipalService.fetchCandidates(userId as string, filters);
+
+    res.json({
+      success: true,
+      total: candidates.length,
+      candidates
+    });
+
+  } catch (error: any) {
+    console.error('Fetch candidates error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * POST /api/ceipal/sync-resumes
+ * Sync resumes/submissions from Ceipal
+ */
+router.post('/sync-resumes', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const userId = req.body.userId || 'default-user';
+    console.log('🔄 Starting Ceipal resume sync for user:', userId);
+
+    const result = await ceipalService.syncResumes(userId);
+
+    res.json(result);
+
+  } catch (error: any) {
+    console.error('❌ Sync resumes error:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
   }
 });
 

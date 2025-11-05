@@ -230,7 +230,7 @@ const ResumeDashboard: React.FC = () => {
     if (!ceipalConnected) {
       const goToSettings = window.confirm(
         'Ceipal is not configured.\n\n' +
-        'Click OK to go to Ceipal Settings to configure your API credentials.'
+        'Click OK to go to Ceipal Settings to configure your API credentials for resume sync.'
       );
 
       if (goToSettings) {
@@ -242,23 +242,24 @@ const ResumeDashboard: React.FC = () => {
     try {
       setCeipalSyncing(true);
       const userId = 'default-user'; // Use actual user ID in production
-      const response = await axios.post(`${API_URL}/ceipal/sync-jobs`, { userId });
+      const response = await axios.post(`${API_URL}/ceipal/sync-resumes`, { userId });
 
       if (response.data.success) {
+        const { added, updated, total } = response.data.stats;
         alert(
-          `✅ Ceipal Sync Complete!\n\n` +
-          `Jobs Synced: ${response.data.jobsSynced || 0}\n` +
-          `Candidates Synced: ${response.data.candidatesSynced || 0}\n\n` +
-          `${response.data.errors && response.data.errors.length > 0 ?
-            `Errors: ${response.data.errors.length}` : 'No errors!'}`
+          `✅ Ceipal Resume Sync Complete!\n\n` +
+          `Total Resumes: ${total}\n` +
+          `New: ${added}\n` +
+          `Updated: ${updated}\n\n` +
+          `All resumes are now available in your dashboard!`
         );
         fetchStats();
         fetchCategories();
         fetchRecentResumes();
       }
     } catch (error: any) {
-      console.error('Error syncing Ceipal:', error);
-      alert(error.response?.data?.error || 'Failed to sync with Ceipal. Please check your configuration.');
+      console.error('Error syncing Ceipal resumes:', error);
+      alert(error.response?.data?.error || 'Failed to sync resumes from Ceipal. Please check your configuration.');
     } finally {
       setCeipalSyncing(false);
     }
@@ -560,10 +561,10 @@ const ResumeDashboard: React.FC = () => {
                     ? 'bg-purple-600 text-white hover:bg-purple-700'
                     : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
                 }`}
-                title={ceipalConnected ? 'Sync candidates from Ceipal' : 'Click to configure Ceipal'}
+                title={ceipalConnected ? 'Sync resumes from Ceipal' : 'Click to configure Ceipal resume sync'}
               >
-                <StarIcon className="h-5 w-5" />
-                <span>{ceipalSyncing ? 'Syncing...' : ceipalConnected ? 'Sync Ceipal' : 'Ceipal'}</span>
+                <DocumentTextIcon className="h-5 w-5" />
+                <span>{ceipalSyncing ? 'Syncing...' : ceipalConnected ? 'Sync Ceipal' : 'Setup Ceipal'}</span>
               </button>
 
               {/* Outlook Integration */}
@@ -835,8 +836,8 @@ const ResumeDashboard: React.FC = () => {
                         onClick={() => navigate('/ceipal-settings')}
                         className="flex items-center space-x-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700"
                       >
-                        <StarIcon className="h-5 w-5" />
-                        <span>Connect Ceipal</span>
+                        <DocumentTextIcon className="h-5 w-5" />
+                        <span>Setup Ceipal Sync</span>
                       </button>
                     )}
                   </div>

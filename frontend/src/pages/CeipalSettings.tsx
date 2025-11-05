@@ -8,6 +8,7 @@ import {
   CloudIcon,
   Cog6ToothIcon,
   ArrowPathIcon,
+  DocumentTextIcon,
 } from '@heroicons/react/24/outline';
 
 const API_URL = process.env.REACT_APP_API_URL
@@ -15,14 +16,12 @@ const API_URL = process.env.REACT_APP_API_URL
   : 'http://localhost:5000/api';
 
 interface CeipalConfig {
+  username?: string;
+  password?: string;
   apiKey: string;
-  apiUrl: string;
+  accessToken?: string;
+  resumeApiUrl?: string;
   mockMode: boolean;
-  syncEnabled: boolean;
-  syncInterval: number;
-  syncJobs: boolean;
-  syncCandidates: boolean;
-  syncApplications: boolean;
   connectionStatus: string;
   lastSyncDate?: string;
   lastError?: string;
@@ -33,14 +32,8 @@ const CeipalSettings: React.FC = () => {
 
   const [config, setConfig] = useState<CeipalConfig>({
     apiKey: 'MOCK_API_KEY',
-    apiUrl: 'https://api.ceipal.com/v1',
     mockMode: true,
-    syncEnabled: false,
-    syncInterval: 30,
-    syncJobs: true,
-    syncCandidates: true,
-    syncApplications: true,
-    connectionStatus: 'disconnected'
+    connectionStatus: 'disconnected',
   });
 
   const [loading, setLoading] = useState(true);
@@ -49,11 +42,7 @@ const CeipalSettings: React.FC = () => {
   const [syncing, setSyncing] = useState(false);
   const [message, setMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
-  useEffect(() => {
-    fetchConfig();
-  }, []);
-
-  const fetchConfig = async () => {
+  const fetchConfig = React.useCallback(async () => {
     try {
       setLoading(true);
       const response = await axios.get(`${API_URL}/ceipal/config`);
@@ -64,7 +53,11 @@ const CeipalSettings: React.FC = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
+
+  useEffect(() => {
+    fetchConfig();
+  }, [fetchConfig]);
 
   const showMessage = (type: 'success' | 'error', text: string) => {
     setMessage({ type, text });
@@ -74,8 +67,12 @@ const CeipalSettings: React.FC = () => {
   const handleSave = async () => {
     try {
       setSaving(true);
-      await axios.post(`${API_URL}/ceipal/config`, config);
+      await axios.post(`${API_URL}/ceipal/config`, {
+        userId: 'default-user',
+        ...config
+      });
       showMessage('success', 'Configuration saved successfully!');
+      fetchConfig(); // Refresh to see saved values
     } catch (error: any) {
       console.error('Error saving config:', error);
       showMessage('error', error.response?.data?.error || 'Failed to save configuration');
@@ -87,7 +84,16 @@ const CeipalSettings: React.FC = () => {
   const handleTestConnection = async () => {
     try {
       setTesting(true);
-      const response = await axios.post(`${API_URL}/ceipal/test-connection`);
+
+      // First save the current config, then test
+      await axios.post(`${API_URL}/ceipal/config`, {
+        userId: 'default-user',
+        ...config
+      });
+
+      const response = await axios.post(`${API_URL}/ceipal/test-connection`, {
+        userId: 'default-user'
+      });
 
       if (response.data.success) {
         showMessage('success', response.data.message);
@@ -103,21 +109,23 @@ const CeipalSettings: React.FC = () => {
     }
   };
 
-  const handleSyncJobs = async () => {
+  const handleSyncResumes = async () => {
     try {
       setSyncing(true);
-      const response = await axios.post(`${API_URL}/ceipal/sync-jobs`);
+      const response = await axios.post(`${API_URL}/ceipal/sync-resumes`, {
+        userId: 'default-user'
+      });
 
       if (response.data.success) {
         const { added, updated, total } = response.data.stats;
-        showMessage('success', `Synced ${total} jobs! ${added} new, ${updated} updated.`);
+        showMessage('success', `Synced ${total} resumes! ${added} new, ${updated} updated.`);
         fetchConfig(); // Refresh config
       } else {
-        showMessage('error', 'Sync failed');
+        showMessage('error', 'Resume sync failed');
       }
     } catch (error: any) {
-      console.error('Sync failed:', error);
-      showMessage('error', error.response?.data?.error || 'Sync failed');
+      console.error('Resume sync failed:', error);
+      showMessage('error', error.response?.data?.error || 'Resume sync failed');
     } finally {
       setSyncing(false);
     }
@@ -174,10 +182,10 @@ const CeipalSettings: React.FC = () => {
                 <ArrowLeftIcon className="h-5 w-5 text-gray-600" />
               </button>
               <div className="flex items-center space-x-3">
-                <Cog6ToothIcon className="h-8 w-8 text-blue-600" />
+                <DocumentTextIcon className="h-8 w-8 text-purple-600" />
                 <div>
-                  <h1 className="text-2xl font-bold text-gray-900">Ceipal Settings</h1>
-                  <p className="text-sm text-gray-600">Configure your Ceipal ATS integration</p>
+                  <h1 className="text-2xl font-bold text-gray-900">Ceipal Resume Sync</h1>
+                  <p className="text-sm text-gray-600">Configure Ceipal credentials to sync resumes</p>
                 </div>
               </div>
             </div>
@@ -210,6 +218,26 @@ const CeipalSettings: React.FC = () => {
 
       {/* Main Content */}
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Instructions Banner */}
+        {!config.mockMode && (!config.apiKey || config.apiKey === 'MOCK_API_KEY') && (
+          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            <div className="flex items-start">
+              <Cog6ToothIcon className="h-6 w-6 text-blue-600 mr-3 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="text-sm font-semibold text-blue-900 mb-2">🔑 Setup Required: Get Your Ceipal API Key</h3>
+                <ol className="text-sm text-blue-800 space-y-1 list-decimal list-inside">
+                  <li>Log into your Ceipal account</li>
+                  <li>Go to <strong>Settings → API</strong> (or similar section)</li>
+                  <li>Find or generate your <strong>API Key</strong></li>
+                  <li>Copy the entire API Key</li>
+                  <li>Paste it in the "API Key / Access Token" field below</li>
+                  <li>Click "Save Settings" then "Test Connection"</li>
+                </ol>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Mock Mode Banner */}
         {config.mockMode && (
           <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
@@ -228,7 +256,7 @@ const CeipalSettings: React.FC = () => {
 
         {/* Connection Section */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Connection Settings</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">API Credentials</h2>
 
           <div className="space-y-4">
             {/* Mock Mode Toggle */}
@@ -250,36 +278,96 @@ const CeipalSettings: React.FC = () => {
               </label>
             </div>
 
-            {/* API URL */}
+            {/* API Key / Access Token (Primary Method) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                API URL
-              </label>
-              <input
-                type="text"
-                value={config.apiUrl}
-                onChange={(e) => setConfig({ ...config, apiUrl: e.target.value })}
-                disabled={config.mockMode}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
-                placeholder="https://api.ceipal.com/v1"
-              />
-            </div>
-
-            {/* API Key */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                API Key {config.mockMode && <span className="text-xs text-gray-500">(not needed in mock mode)</span>}
+                API Key / Access Token <span className="text-red-500">*</span>
+                {config.mockMode && <span className="text-xs text-gray-500"> (disabled in mock mode)</span>}
               </label>
               <input
                 type="password"
-                value={config.apiKey}
-                onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
+                value={config.apiKey !== 'MOCK_API_KEY' ? config.apiKey : (config.accessToken || '')}
+                onChange={(e) => setConfig({ ...config, apiKey: e.target.value, accessToken: e.target.value })}
                 disabled={config.mockMode}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
-                placeholder="Enter your Ceipal API key"
+                placeholder="Paste your Ceipal API Key here (from Ceipal Settings → API)"
               />
-              <p className="text-xs text-gray-500 mt-1">
-                Your API key is encrypted and stored securely
+              <p className="text-xs text-blue-600 mt-1 font-medium">
+                📍 Find this in: Ceipal Dashboard → Settings → API → Copy API Key
+              </p>
+            </div>
+
+            {/* Optional: Username/Password */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                Alternative: Username & Password (if you don't have an access token)
+              </h3>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Username
+                    {config.mockMode && <span className="text-xs text-gray-500"> (disabled)</span>}
+                  </label>
+                  <input
+                    type="text"
+                    value={config.username || ''}
+                    onChange={(e) => setConfig({ ...config, username: e.target.value })}
+                    disabled={config.mockMode}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
+                    placeholder="your.email@company.com"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Password
+                    {config.mockMode && <span className="text-xs text-gray-500"> (disabled)</span>}
+                  </label>
+                  <input
+                    type="password"
+                    value={config.password || ''}
+                    onChange={(e) => setConfig({ ...config, password: e.target.value })}
+                    disabled={config.mockMode}
+                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
+                    placeholder="Your password"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Resume API URL */}
+            <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+              <h3 className="text-sm font-semibold text-gray-700 mb-3">
+                Resume API Configuration <span className="text-red-500">*</span>
+              </h3>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Resume API URL <span className="text-red-500">*</span>
+                  {config.mockMode && <span className="text-xs text-gray-500"> (disabled)</span>}
+                </label>
+                <input
+                  type="text"
+                  value={config.resumeApiUrl || ''}
+                  onChange={(e) => setConfig({ ...config, resumeApiUrl: e.target.value })}
+                  disabled={config.mockMode}
+                  className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
+                  placeholder="e.g., https://api.ceipal.com/v1/resumes"
+                />
+                <p className="text-xs text-gray-500 mt-1">
+                  Your API endpoint configured for fetching resumes (this will also be used for authentication)
+                </p>
+              </div>
+
+              <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                <p className="text-xs text-blue-700">
+                  <strong>ℹ️ Authentication:</strong> The system will automatically use<br/>
+                  <code className="bg-blue-100 px-1 py-0.5 rounded">https://api.ceipal.com/v1/createAuthtoken/</code><br/>
+                  to generate access tokens for all users.
+                </p>
+              </div>
+
+              <p className="text-xs text-blue-600 font-medium mt-3">
+                📍 Get your Resume API URL from your Ceipal API configuration
               </p>
             </div>
 
@@ -323,138 +411,74 @@ const CeipalSettings: React.FC = () => {
           </div>
         </div>
 
-        {/* Sync Settings Section */}
+        {/* Resume Sync Section */}
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <h2 className="text-xl font-bold text-gray-900 mb-4">Sync Settings</h2>
+          <h2 className="text-xl font-bold text-gray-900 mb-4">Resume Sync</h2>
 
           <div className="space-y-4">
-            {/* Auto Sync Toggle */}
-            <div className="flex items-center justify-between pb-4 border-b">
-              <div>
-                <label className="text-sm font-medium text-gray-700">Enable Auto-Sync</label>
-                <p className="text-xs text-gray-500 mt-1">
-                  Automatically sync data at regular intervals
-                </p>
-              </div>
-              <label className="relative inline-flex items-center cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={config.syncEnabled}
-                  onChange={(e) => setConfig({ ...config, syncEnabled: e.target.checked })}
-                  className="sr-only peer"
-                />
-                <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-              </label>
-            </div>
-
-            {/* Sync Interval */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Sync Interval (minutes)
-              </label>
-              <input
-                type="number"
-                value={config.syncInterval}
-                onChange={(e) => setConfig({ ...config, syncInterval: parseInt(e.target.value) })}
-                min="5"
-                max="1440"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            {/* What to Sync */}
-            <div className="space-y-3">
-              <label className="text-sm font-medium text-gray-700">What to Sync</label>
-
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  id="syncJobs"
-                  checked={config.syncJobs}
-                  onChange={(e) => setConfig({ ...config, syncJobs: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="syncJobs" className="text-sm text-gray-700">
-                  Job Postings
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  id="syncCandidates"
-                  checked={config.syncCandidates}
-                  onChange={(e) => setConfig({ ...config, syncCandidates: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="syncCandidates" className="text-sm text-gray-700">
-                  Candidates (Coming Soon)
-                </label>
-              </div>
-
-              <div className="flex items-center space-x-3">
-                <input
-                  type="checkbox"
-                  id="syncApplications"
-                  checked={config.syncApplications}
-                  onChange={(e) => setConfig({ ...config, syncApplications: e.target.checked })}
-                  className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                />
-                <label htmlFor="syncApplications" className="text-sm text-gray-700">
-                  Applications (Coming Soon)
-                </label>
-              </div>
-            </div>
-
             {/* Last Sync */}
             {config.lastSyncDate && (
-              <div className="text-sm text-gray-600 pt-4 border-t">
-                Last synced: {new Date(config.lastSyncDate).toLocaleString()}
+              <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                <p className="text-sm text-blue-800">
+                  <strong>Last synced:</strong> {new Date(config.lastSyncDate).toLocaleString()}
+                </p>
               </div>
             )}
 
-            {/* Manual Sync and View Jobs Buttons */}
-            <div className="pt-4 flex space-x-3">
+            {/* Manual Sync Button */}
+            <div className="pt-4">
               <button
-                onClick={handleSyncJobs}
-                disabled={syncing}
-                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50"
+                onClick={handleSyncResumes}
+                disabled={syncing || config.mockMode}
+                className="flex items-center space-x-2 px-6 py-3 bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 disabled:cursor-not-allowed w-full justify-center font-semibold text-lg"
               >
                 {syncing ? (
                   <>
-                    <ArrowPathIcon className="h-5 w-5 animate-spin" />
-                    <span>Syncing...</span>
+                    <ArrowPathIcon className="h-6 w-6 animate-spin" />
+                    <span>Syncing Resumes...</span>
                   </>
                 ) : (
                   <>
-                    <ArrowPathIcon className="h-5 w-5" />
-                    <span>Sync Now</span>
+                    <DocumentTextIcon className="h-6 w-6" />
+                    <span>Sync Resumes Now</span>
                   </>
                 )}
               </button>
-
-              <button
-                onClick={() => navigate('/ceipal-jobs')}
-                className="flex items-center space-x-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-              >
-                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-                </svg>
-                <span>View Synced Jobs</span>
-              </button>
+              {config.mockMode && (
+                <p className="text-sm text-gray-500 mt-2 text-center">
+                  Disable mock mode and configure your credentials to sync resumes
+                </p>
+              )}
             </div>
           </div>
         </div>
 
         {/* Help Section */}
-        <div className="bg-blue-50 rounded-lg p-6">
-          <h3 className="text-lg font-semibold text-blue-900 mb-3">Need Help?</h3>
-          <ul className="space-y-2 text-sm text-blue-800">
-            <li>• <strong>Mock Mode:</strong> Perfect for testing without real API access</li>
-            <li>• <strong>Real API:</strong> Disable mock mode and enter your Ceipal API credentials</li>
-            <li>• <strong>Sync:</strong> Click "Sync Now" to import jobs from Ceipal</li>
-            <li>• <strong>Auto-Sync:</strong> Enable to automatically sync at regular intervals</li>
-          </ul>
+        <div className="bg-purple-50 rounded-lg p-6 border border-purple-200">
+          <h3 className="text-lg font-semibold text-purple-900 mb-3">📚 How to Setup Resume Sync</h3>
+          <ol className="space-y-2 text-sm text-purple-800 list-decimal list-inside">
+            <li><strong>Get API Credentials:</strong> Login to Ceipal → Settings → API Configuration</li>
+            <li><strong>Disable Mock Mode:</strong> Turn off the mock mode toggle above</li>
+            <li><strong>Enter Required Fields:</strong>
+              <ul className="ml-6 mt-1 space-y-1 list-disc list-inside">
+                <li><strong>API Key:</strong> Your Ceipal API Key</li>
+                <li><strong>Email/Username:</strong> Your Ceipal login email</li>
+                <li><strong>Password:</strong> Your Ceipal login password</li>
+                <li><strong>Resume API URL:</strong> Your configured resume endpoint URL</li>
+              </ul>
+            </li>
+            <li><strong>Save & Test:</strong> Click "Save Settings" then "Test Connection"</li>
+            <li><strong>Sync Resumes:</strong> Once connected, click "Sync Resumes Now" to import all resumes</li>
+          </ol>
+
+          <div className="mt-4 pt-4 border-t border-purple-300">
+            <p className="text-xs text-purple-700">
+              <strong>🔐 Authentication Flow:</strong>
+              <br/>1. System sends credentials to: <code className="bg-purple-100 px-1 rounded">https://api.ceipal.com/v1/createAuthtoken/</code>
+              <br/>2. Receives access token from Ceipal
+              <br/>3. Uses token to fetch resumes from your Resume API URL
+            </p>
+          </div>
         </div>
       </div>
     </div>

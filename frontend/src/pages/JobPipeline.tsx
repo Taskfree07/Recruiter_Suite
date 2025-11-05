@@ -111,11 +111,14 @@ const JobPipeline: React.FC = () => {
   const [sourceFilter, setSourceFilter] = useState<string>('all');
   const [ilabor360Connected, setIlabor360Connected] = useState(false);
   const [ilabor360Syncing, setIlabor360Syncing] = useState(false);
+  const [ceipalConnected, setCeipalConnected] = useState(false);
+  const [ceipalSyncing, setCeipalSyncing] = useState(false);
 
   // Fetch jobs and check connection status
   useEffect(() => {
     fetchJobs();
     checkILabor360Status();
+    checkCeipalStatus();
   }, []);
 
   // Apply filters
@@ -258,6 +261,59 @@ const JobPipeline: React.FC = () => {
     }
   };
 
+  const checkCeipalStatus = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/ceipal/config`);
+
+      if (response.data.success && response.data.config) {
+        // Consider connected if not in mock mode or if credentials are provided
+        const config = response.data.config;
+        const isConnected = !config.mockMode || (config.apiKey && config.apiKey !== 'MOCK_API_KEY');
+        setCeipalConnected(isConnected);
+      }
+    } catch (error) {
+      console.error('Error checking Ceipal status:', error);
+    }
+  };
+
+  const handleSyncCeipal = async () => {
+    if (!ceipalConnected) {
+      const goToSettings = window.confirm(
+        'Ceipal is not configured.\n\n' +
+        'Click OK to go to Ceipal Settings to configure your API credentials.'
+      );
+
+      if (goToSettings) {
+        navigate('/ceipal-settings');
+      }
+      return;
+    }
+
+    try {
+      setCeipalSyncing(true);
+      const response = await axios.post(`${API_URL}/api/ceipal/sync-jobs`, {
+        userId: 'default-user'
+      });
+
+      if (response.data.success) {
+        const stats = response.data.stats;
+
+        toast.success(
+          `Ceipal Sync Complete!\n` +
+          `${stats.added} jobs added, ${stats.updated} updated`
+        );
+
+        // Refresh jobs list
+        fetchJobs();
+      }
+    } catch (error: any) {
+      console.error('Error syncing Ceipal:', error);
+      toast.error(error.response?.data?.error || 'Failed to sync with Ceipal');
+    } finally {
+      setCeipalSyncing(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const styles: Record<string, { bg: string; text: string; icon: any }> = {
       open: { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircleIcon },
@@ -362,6 +418,25 @@ const JobPipeline: React.FC = () => {
                 <ArrowLeftIcon className="h-5 w-5" />
               </button>
 
+              {/* Ceipal Sync */}
+              <button
+                onClick={handleSyncCeipal}
+                disabled={ceipalSyncing}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg disabled:opacity-50 transition-all ${
+                  ceipalConnected
+                    ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-md'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+                title={ceipalConnected ? 'Sync jobs from Ceipal' : 'Click to configure Ceipal'}
+              >
+                {ceipalSyncing ? (
+                  <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                ) : (
+                  <BriefcaseIcon className="h-5 w-5" />
+                )}
+                <span>{ceipalSyncing ? 'Syncing...' : ceipalConnected ? 'Sync Ceipal' : 'Ceipal'}</span>
+              </button>
+
               {/* iLabor360 Sync */}
               <button
                 onClick={handleSyncILabor360}
@@ -381,17 +456,29 @@ const JobPipeline: React.FC = () => {
                 <span>{ilabor360Syncing ? 'Syncing...' : ilabor360Connected ? 'Sync iLabor360' : 'iLabor360'}</span>
               </button>
 
-              {/* iLabor360 Settings */}
+              {/* Settings Dropdown or Multiple Buttons */}
+              <button
+                onClick={() => navigate('/ceipal-settings')}
+                className="flex items-center space-x-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-md"
+                title="Configure Ceipal Settings"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+                <span>Ceipal</span>
+              </button>
+
               <button
                 onClick={() => navigate('/ilabor360-settings')}
-                className="flex items-center space-x-2 px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors shadow-md"
+                className="flex items-center space-x-2 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors shadow-md"
                 title="Configure iLabor360 Settings"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor" className="w-5 h-5">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.324.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 011.37.49l1.296 2.247a1.125 1.125 0 01-.26 1.431l-1.003.827c-.293.24-.438.613-.431.992a6.759 6.759 0 010 .255c-.007.378.138.75.43.99l1.005.828c.424.35.534.954.26 1.43l-1.298 2.247a1.125 1.125 0 01-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.57 6.57 0 01-.22.128c-.331.183-.581.495-.644.869l-.213 1.28c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.02-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 01-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 01-1.369-.49l-1.297-2.247a1.125 1.125 0 01.26-1.431l1.004-.827c.292-.24.437-.613.43-.992a6.932 6.932 0 010-.255c.007-.378-.138-.75-.43-.99l-1.004-.828a1.125 1.125 0 01-.26-1.43l1.297-2.247a1.125 1.125 0 011.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.087.22-.128.332-.183.582-.495.644-.869l.214-1.281z" />
                   <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                 </svg>
-                <span>Settings</span>
+                <span>iLabor360</span>
               </button>
 
               {/* Refresh Jobs */}

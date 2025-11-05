@@ -1,6 +1,9 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IUnifiedJob extends Document {
+  // User Tracking (for multi-tenant support)
+  userId: string;
+
   // Basic Info
   title: string;
   description: string;
@@ -83,6 +86,13 @@ export interface IUnifiedJob extends Document {
 
 const unifiedJobSchema = new Schema<IUnifiedJob>(
   {
+    // User Tracking (for multi-tenant support)
+    userId: {
+      type: String,
+      required: true,
+      default: 'default-user'
+    },
+
     // Basic Info
     title: {
       type: String,
@@ -222,6 +232,7 @@ const unifiedJobSchema = new Schema<IUnifiedJob>(
 );
 
 // Indexes
+unifiedJobSchema.index({ userId: 1 }); // Multi-tenant filtering
 unifiedJobSchema.index({ status: 1 });
 unifiedJobSchema.index({ postedDate: -1 });
 unifiedJobSchema.index({ 'sources.type': 1 });

@@ -1,12 +1,26 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
+interface ICeipalFieldMapping {
+  fieldName: string;
+  fieldRename: string;
+  mandatory: boolean;
+  includingInApi: boolean;
+}
+
 export interface ICeipalConfig extends Document {
   userId: string;
 
+  // User Credentials (for login-based authentication)
+  username?: string;
+  password?: string; // Encrypted in production
+
   // API Configuration
   apiKey: string;
-  apiUrl: string;
-  apiVersion: string;
+  accessToken?: string; // OAuth/Bearer token for Ceipal API
+  resumeApiUrl?: string; // User's configured resume API endpoint
+
+  // Field Mappings (which fields to fetch from API)
+  fieldMappings?: ICeipalFieldMapping[];
 
   // Connection Status
   connectionStatus: 'connected' | 'disconnected' | 'error';
@@ -39,20 +53,39 @@ const ceipalConfigSchema = new Schema<ICeipalConfig>(
       default: 'default-user'
     },
 
+    // User Credentials
+    username: {
+      type: String,
+      required: false
+    },
+    password: {
+      type: String,
+      required: false
+      // TODO: Encrypt this in production using crypto
+    },
+
     // API Configuration
     apiKey: {
       type: String,
       required: false,
       default: 'MOCK_API_KEY'
     },
-    apiUrl: {
+    accessToken: {
       type: String,
-      default: 'https://api.ceipal.com/v1'
+      required: false
     },
-    apiVersion: {
+    resumeApiUrl: {
       type: String,
-      default: 'v1'
+      required: false
     },
+
+    // Field Mappings
+    fieldMappings: [{
+      fieldName: { type: String, required: true },
+      fieldRename: { type: String, required: true },
+      mandatory: { type: Boolean, default: false },
+      includingInApi: { type: Boolean, default: true }
+    }],
 
     // Connection Status
     connectionStatus: {
