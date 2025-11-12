@@ -3,23 +3,24 @@ import crypto from 'crypto';
 import ILabor360Config from '../models/iLabor360Config';
 import ILabor360SyncLog from '../models/iLabor360SyncLog';
 import UnifiedJob from '../models/unifiedJob';
-import RecruiterResume from '../models/recruiterResume';
 
 /**
- * iLabor360 Service
+ * iLabor360 Service - REST API v2.0
  *
- * This service handles integration with iLabor360 through web scraping.
- * It manages authentication, syncing requisitions and submissions,
- * and maintains sync logs.
+ * This service handles integration with iLabor360 REST API v2.0.
+ * It uses tokenization for authentication and retrieves released requisitions.
+ *
+ * API Documentation:
+ * - Base URL: https://api.ilabor360.com/v2/rest/
+ * - Token validity: 15 minutes
+ * - Date range limit: 1-3 days (recommended: 1 day)
+ * - Only Released Requisitions can be retrieved
  */
 class ILabor360Service {
-  private scraperUrl: string;
   private encryptionKey: Buffer;
   private algorithm = 'aes-256-gcm';
 
   constructor() {
-    this.scraperUrl = process.env.ILABOR360_SCRAPER_URL || 'http://localhost:5002';
-    
     // Generate or use encryption key
     const key = process.env.ENCRYPTION_KEY || crypto.randomBytes(32).toString('hex');
     this.encryptionKey = Buffer.from(key.slice(0, 64), 'hex');
@@ -61,8 +62,161 @@ class ILabor360Service {
       return decrypted;
     } catch (error: any) {
       console.error('Decryption error:', error.message);
-      throw new Error('Failed to decrypt password. Please update your password in settings.');
+      throw new Error('Failed to decrypt credentials. Please update your credentials in settings.');
     }
+  }
+
+  /**
+   * Check if cached token is still valid (within 15 minutes)
+   */
+  private isTokenValid(config: any): boolean {
+    if (!config.lastApiToken || !config.lastTokenTime) {
+      return false;
+    }
+
+    const tokenAge = Date.now() - new Date(config.lastTokenTime).getTime();
+    const fifteenMinutes = 15 * 60 * 1000;
+
+    // Consider token valid if less than 14 minutes old (1 min buffer)
+    return tokenAge < (fifteenMinutes - 60000);
+  }
+
+  /**
+   * Get API token (login)
+   * POST /login?userName={{api.user}}&key={{api.key}}&password={{api.pass}}
+   */
+  private async getApiToken(config: any): Promise<string> {
+    try {
+      // Check if we have a valid cached token
+      if (this.isTokenValid(config)) {
+        console.log('✅ Using cached API token');
+        return config.lastApiToken;
+      }
+
+      console.log('🔐 Requesting new API token...');
+
+      // Decrypt credentials
+      const apiKey = this.decrypt(config.apiKey);
+      const apiPassword = this.decrypt(config.apiPassword);
+
+      const loginUrl = `${config.apiBaseUrl}/login`;
+      const params = {
+        userName: config.apiUsername,
+        key: apiKey,
+        password: apiPassword
+      };
+
+      const response = await axios.post(loginUrl, null, {
+        params,
+        timeout: 30000,
+        validateStatus: (status) => status < 500
+      });
+
+      if (response.data.status === 'success' && response.data.result) {
+        const token = response.data.result;
+
+        // Cache the token
+        config.lastApiToken = token;
+        config.lastTokenTime = new Date();
+        await config.save();
+
+        console.log('✅ API token obtained successfully');
+        return token;
+      } else if (response.data.status === 'error') {
+        const errorMsg = response.data.error?.message || 'Authentication failed';
+        throw new Error(`API Login Failed: ${errorMsg}`);
+      } else {
+        throw new Error('Unexpected API response format');
+      }
+    } catch (error: any) {
+      if (error.message.includes('API Login Failed')) {
+        throw error;
+      }
+      
+      if (error.code === 'ECONNREFUSED' || error.message.includes('connect')) {
+        throw new Error('Unable to connect to iLabor360 API. Please check your network connection.');
+      }
+      
+      if (error.message.includes('timeout')) {
+        throw new Error('API request timeout. The iLabor360 API may be slow or unreachable.');
+      }
+
+      throw new Error(`API Authentication Error: ${error.message}`);
+    }
+  }
+
+  /**
+   * Fetch requisitions from API
+   * GET /ReqProv?apiToken={{token}}&userName={{user}}&sysUserID={{sysUser}}&StartDate=...&EndDate=...
+   */
+  private async fetchRequisitions(
+    apiToken: string,
+    config: any,
+    startDate: string,
+    endDate: string,
+    useModifiedDate: boolean = false
+  ): Promise<any[]> {
+    try {
+      console.log(`📥 Fetching requisitions from ${startDate} to ${endDate}...`);
+
+      const reqProvUrl = `${config.apiBaseUrl}/ReqProv`;
+      
+      const params: any = {
+        apiToken,
+        userName: config.apiUsername,
+        sysUserID: config.sysUserId
+      };
+
+      // Use modified date or regular date based on config
+      if (useModifiedDate) {
+        params.modifyStartDate = startDate;
+        params.modifyEndDate = endDate;
+      } else {
+        params.StartDate = startDate;
+        params.EndDate = endDate;
+      }
+
+      const response = await axios.get(reqProvUrl, {
+        params,
+        timeout: 60000,
+        validateStatus: (status) => status < 500
+      });
+
+      if (response.data.status === 'success' && Array.isArray(response.data.result)) {
+        const requisitions = response.data.result;
+        console.log(`✅ Retrieved ${requisitions.length} requisitions`);
+        return requisitions;
+      } else if (response.data.status === 'error') {
+        const errorMsg = response.data.error?.message || 'Failed to fetch requisitions';
+        throw new Error(`API Error: ${errorMsg}`);
+      } else {
+        throw new Error('Unexpected API response format');
+      }
+    } catch (error: any) {
+      if (error.message.includes('API Error')) {
+        throw error;
+      }
+
+      if (error.code === 'ECONNREFUSED' || error.message.includes('connect')) {
+        throw new Error('Unable to connect to iLabor360 API. Please check your network connection.');
+      }
+      
+      if (error.message.includes('timeout')) {
+        throw new Error('API request timeout. The iLabor360 API may be slow or unreachable.');
+      }
+
+      throw new Error(`Failed to fetch requisitions: ${error.message}`);
+    }
+  }
+
+  /**
+   * Format date for API (MM/DD/YYYY)
+   */
+  private formatDateForAPI(date: Date): string {
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const year = date.getFullYear();
+    return `${month}/${day}/${year}`;
   }
 
   /**
@@ -74,8 +228,10 @@ class ILabor360Service {
     if (!config) {
       config = new ILabor360Config({
         userId,
-        username: '',
-        password: '',
+        apiUsername: '',
+        apiKey: '',
+        apiPassword: '',
+        sysUserId: '',
         connectionStatus: 'disconnected',
         syncEnabled: false,
         autoSync: false
@@ -92,22 +248,30 @@ class ILabor360Service {
   async updateConfig(userId: string, updates: any): Promise<any> {
     const config = await this.getOrCreateConfig(userId);
 
-    // Encrypt password if provided and not already encrypted
-    if (updates.password) {
-      // Check if password is already encrypted (contains colons from IV:TAG:ENCRYPTED format)
-      if (!updates.password.includes(':') || updates.password === '********') {
-        updates.password = this.encrypt(updates.password);
-      }
+    // Encrypt sensitive fields if provided and not already encrypted
+    if (updates.apiKey && !updates.apiKey.includes(':')) {
+      updates.apiKey = this.encrypt(updates.apiKey);
+    }
+
+    if (updates.apiPassword && updates.apiPassword !== '********' && !updates.apiPassword.includes(':')) {
+      updates.apiPassword = this.encrypt(updates.apiPassword);
     }
 
     Object.assign(config, updates);
+    
+    // Clear cached token when credentials change
+    if (updates.apiUsername || updates.apiKey || updates.apiPassword) {
+      config.lastApiToken = undefined;
+      config.lastTokenTime = undefined;
+    }
+
     await config.save();
 
     return config;
   }
 
   /**
-   * Test connection to iLabor360
+   * Test connection to iLabor360 API
    */
   async testConnection(userId: string = 'default-user'): Promise<any> {
     try {
@@ -117,61 +281,30 @@ class ILabor360Service {
         throw new Error('iLabor360 not configured. Please set up your credentials first.');
       }
 
-      if (!config.username || !config.password) {
-        throw new Error('Username and password are required');
+      if (!config.apiUsername || !config.apiKey || !config.apiPassword || !config.sysUserId) {
+        throw new Error('All API credentials are required: API Username, API Key, API Password, and System User ID');
       }
 
-      console.log('🔐 Testing iLabor360 connection...');
+      console.log('🔐 Testing iLabor360 API connection...');
 
-      // Decrypt password
-      let decryptedPassword: string;
-      try {
-        decryptedPassword = this.decrypt(config.password);
-      } catch (decryptError) {
-        throw new Error('Invalid password encryption. Please update your password in settings.');
-      }
+      // Try to get a token (this tests authentication)
+      const token = await this.getApiToken(config);
 
-      // Call scraper service to test login
-      const response = await axios.post(
-        `${this.scraperUrl}/scrape/login`,
-        {
-          username: config.username,
-          password: decryptedPassword,
-          loginUrl: config.loginUrl
-        },
-        { 
-          timeout: 60000,
-          validateStatus: function (status) {
-            // Don't throw on any status, we'll handle it
-            return status < 500;
-          }
-        }
-      );
-
-      if (response.data.success) {
+      if (token) {
         // Update config
         config.connectionStatus = 'connected';
         config.lastConnectionTest = new Date();
         config.lastError = undefined;
         await config.save();
 
-        // Close session immediately after test
-        if (response.data.sessionId) {
-          await axios.post(`${this.scraperUrl}/session/close`, {
-            sessionId: response.data.sessionId
-          }).catch(() => {});
-        }
-
         console.log('✅ Connection test successful');
 
         return {
           success: true,
-          message: 'Successfully connected to iLabor360'
+          message: 'Successfully connected to iLabor360 API'
         };
       } else {
-        // Login failed (401 or 400)
-        const errorMsg = response.data.error || 'Login failed - please check your credentials';
-        throw new Error(errorMsg);
+        throw new Error('Failed to obtain API token');
       }
     } catch (error: any) {
       console.error('❌ Connection test failed:', error.message);
@@ -185,26 +318,15 @@ class ILabor360Service {
         await config.save();
       }
 
-      // Provide user-friendly error messages
-      let errorMessage = error.message;
-      if (error.message.includes('ECONNREFUSED') || error.message.includes('connect')) {
-        errorMessage = 'Unable to connect to scraper service. Please ensure the iLabor360 scraper service is running.';
-      } else if (error.message.includes('timeout')) {
-        errorMessage = 'Connection timeout. The iLabor360 website may be slow or unreachable.';
-      } else if (error.message.includes('credentials') || error.message.includes('incorrect')) {
-        errorMessage = 'Invalid credentials. Please check your username and password.';
-      }
-
-      throw new Error(errorMessage);
+      throw error;
     }
   }
 
   /**
-   * Sync requisitions and submissions from iLabor360
+   * Sync requisitions from iLabor360 API
    */
   async syncAll(userId: string = 'default-user', syncType: 'manual' | 'auto' = 'manual'): Promise<any> {
     const startTime = Date.now();
-    let sessionId: string | undefined;
 
     try {
       const config = await ILabor360Config.findOne({ userId });
@@ -217,70 +339,42 @@ class ILabor360Service {
         throw new Error('Sync is disabled. Please enable it in settings.');
       }
 
+      if (!config.apiUsername || !config.apiKey || !config.apiPassword || !config.sysUserId) {
+        throw new Error('All API credentials are required');
+      }
+
       console.log(`🔄 Starting iLabor360 ${syncType} sync...`);
 
-      // Decrypt password
-      let decryptedPassword: string;
-      try {
-        decryptedPassword = this.decrypt(config.password);
-      } catch (decryptError) {
-        throw new Error('Invalid password encryption. Please update your password in settings.');
-      }
+      // Step 1: Get API Token
+      const apiToken = await this.getApiToken(config);
 
-      // Step 1: Login
-      console.log('🔐 Logging in to iLabor360...');
-      const loginResponse = await axios.post(
-        `${this.scraperUrl}/scrape/login`,
-        {
-          username: config.username,
-          password: decryptedPassword,
-          loginUrl: config.loginUrl
-        },
-        { timeout: 60000 }
+      // Step 2: Calculate date range
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(endDate.getDate() - config.syncDateRange);
+
+      const startDateStr = this.formatDateForAPI(startDate);
+      const endDateStr = this.formatDateForAPI(endDate);
+
+      // Step 3: Fetch requisitions
+      const requisitions = await this.fetchRequisitions(
+        apiToken,
+        config,
+        startDateStr,
+        endDateStr,
+        config.useModifiedDate
       );
 
-      if (!loginResponse.data.success) {
-        throw new Error('Login failed: ' + loginResponse.data.error);
-      }
-
-      sessionId = loginResponse.data.sessionId;
-      console.log('✅ Login successful');
-
-      // Step 2: Scrape requisitions (jobs only)
-      console.log('📥 Scraping requisitions from iLabor360...');
-      const scrapeResponse = await axios.post(
-        `${this.scraperUrl}/scrape/requisitions`,
-        {
-          sessionId,
-          maxRequisitions: config.maxRequisitionsPerSync,
-          status: 'all'
-        },
-        { 
-          timeout: 300000,  // 5 minutes for manual login
-          validateStatus: function (status) {
-            return status < 500;
-          }
-        }
-      );
-
-      if (!scrapeResponse.data.success) {
-        throw new Error(scrapeResponse.data.error || 'Scraping failed');
-      }
-
-      const requisitions = scrapeResponse.data.requisitions || [];
-
-      console.log(`📊 Found ${requisitions.length} requisitions`);
-
-      // Step 3: Process requisitions
+      // Step 4: Process requisitions
       const reqResults = await this.processRequisitions(requisitions, userId);
 
-      // Step 4: Update stats
+      // Step 5: Update stats
       config.lastSyncDate = new Date();
       config.lastSyncRequisitionCount = requisitions.length;
       config.totalRequisitionsSynced += reqResults.added;
       await config.save();
 
-      // Step 5: Log sync
+      // Step 6: Log sync
       const durationMs = Date.now() - startTime;
 
       await ILabor360SyncLog.create({
@@ -298,8 +392,7 @@ class ILabor360Service {
         submissionsUpdated: 0,
         submissionsSkipped: 0,
         errors: reqResults.errors,
-        durationMs,
-        sessionId
+        durationMs
       });
 
       console.log(`✅ Sync completed in ${(durationMs / 1000).toFixed(2)}s`);
@@ -333,23 +426,16 @@ class ILabor360Service {
           itemType: 'requisition',
           timestamp: new Date()
         }],
-        durationMs: Date.now() - startTime,
-        sessionId
+        durationMs: Date.now() - startTime
       });
 
       throw error;
-    } finally {
-      // Always close session
-      if (sessionId) {
-        await axios.post(`${this.scraperUrl}/session/close`, {
-          sessionId
-        }).catch(() => {});
-      }
     }
   }
 
   /**
    * Process and save requisitions as UnifiedJobs
+   * Maps iLabor360 API v2.0 requisition structure to UnifiedJob model
    */
   private async processRequisitions(requisitions: any[], userId: string): Promise<any> {
     let added = 0;
@@ -359,7 +445,7 @@ class ILabor360Service {
 
     for (const req of requisitions) {
       try {
-        const sourceId = req.source?.id || `ILABOR360-${req.source?.metadata?.reqId}`;
+        const sourceId = `ILABOR360-${req.requisition_id}`;
 
         // Check if job already exists
         const existingJob = await UnifiedJob.findOne({
@@ -367,71 +453,87 @@ class ILabor360Service {
           'sources.id': sourceId
         });
 
-        if (existingJob) {
-          // Update existing job with ALL fields including new ones
-          existingJob.title = req.title || existingJob.title;
-          existingJob.description = req.description || existingJob.description;
-          existingJob.company = req.company || existingJob.company;
-          existingJob.requiredSkills = req.requiredSkills || existingJob.requiredSkills;
-          existingJob.experienceYears = req.experienceYears || existingJob.experienceYears;
-          existingJob.experienceLevel = req.experienceLevel || existingJob.experienceLevel;
-          existingJob.location = req.location || existingJob.location;
-          existingJob.locationType = req.locationType || existingJob.locationType;
-          existingJob.status = req.status || existingJob.status;
-          existingJob.positions = req.positions || existingJob.positions;
-          existingJob.department = req.department || existingJob.department;
-          existingJob.recruiterAssigned = req.recruiterAssigned || existingJob.recruiterAssigned;
-          existingJob.closingDate = req.closingDate || existingJob.closingDate;
+        // Map API fields to UnifiedJob structure
+        const jobData = {
+          title: req.job_title_code || req.position_type_name || 'Untitled Position',
+          description: req.job_description || '',
+          company: req.customer_name || req.client_name || '',
+          requiredSkills: this.extractSkills(req),
+          experienceYears: { min: 0, max: 10 }, // API doesn't provide this
+          experienceLevel: 'Mid' as const,
+          location: this.formatLocation(req.location),
+          locationType: this.determineLocationType(req),
+          status: this.mapStatus(req.status_name),
+          postedDate: req.req_release_date ? new Date(req.req_release_date) : new Date(),
+          closingDate: req.projected_end_date ? new Date(req.projected_end_date) : undefined,
+          positions: req.no_of_positions || 1,
+          department: req.department_name || '',
+          recruiterAssigned: req.req_owner || '',
+          sources: [
+            {
+              type: 'ilabor360' as const,
+              id: sourceId,
+              url: '',
+              metadata: {
+                requisition_id: req.requisition_id,
+                requisition_no: req.requisition_no,
+                projected_start_date: req.projected_start_date,
+                projected_end_date: req.projected_end_date,
+                bill_rate_low: req.bill_rate_low,
+                ot_rate: req.ot_rate,
+                report_to: req.report_to,
+                phone: req.phone,
+                background_check: req.background_check,
+                drug_screen: req.drug_screen,
+                can_submit_candidate: req.can_submit_candidate,
+                customer_ref_no: req.customer_ref_no,
+                primary_skill_set: req.primary_skill_set,
+                secondary_skill_set: req.secondary_skill_set,
+                other_skill_set: req.other_skill_set,
+                notes: req.notes,
+                alternate_email: req.alternate_email,
+                stage: req.stage,
+                secondary_rate: req.secondary_rate,
+                remaining_positions: req.remaining_positions,
+                account_manager: req.account_manager,
+                requisition_type_name: req.requisition_type_name,
+                category_name: req.category_name,
+                job_shift_code: req.job_shift_code,
+                project_name: req.project_name,
+                req_owner_email: req.req_owner_email,
+                supplement_fields: req.supplement_fields
+              },
+              syncDate: new Date()
+            }
+          ],
+          source: 'ilabor360' as const,
+          priority: 'medium' as const
+        };
 
-          // Update source metadata with ALL scraped fields
+        if (existingJob) {
+          // Update existing job
+          Object.assign(existingJob, jobData);
+
+          // Update source metadata
           const sourceIndex = existingJob.sources.findIndex(
             (s: any) => s.type === 'ilabor360' && s.id === sourceId
           );
           if (sourceIndex >= 0) {
-            existingJob.sources[sourceIndex].syncDate = new Date();
-            existingJob.sources[sourceIndex].metadata = req.source?.metadata || existingJob.sources[sourceIndex].metadata;
+            existingJob.sources[sourceIndex] = jobData.sources[0];
           }
 
           await existingJob.save();
           updated++;
         } else {
-          // Create new job with ALL available fields
-          const newJob = new UnifiedJob({
-            title: req.title,
-            description: req.description,
-            company: req.company,
-            requiredSkills: req.requiredSkills || [],
-            niceToHaveSkills: req.niceToHaveSkills || [],
-            experienceYears: req.experienceYears || { min: 0, max: 10 },
-            experienceLevel: req.experienceLevel || 'Mid',
-            location: req.location || 'Remote',
-            locationType: req.locationType || 'remote',
-            status: req.status || 'open',
-            postedDate: req.postedDate || new Date(),
-            closingDate: req.closingDate,
-            positions: req.positions || 1,
-            department: req.department,
-            recruiterAssigned: req.recruiterAssigned,
-            sources: [
-              {
-                type: 'ilabor360',
-                id: sourceId,
-                url: req.source?.url || '',
-                metadata: req.source?.metadata || {},
-                syncDate: new Date()
-              }
-            ],
-            source: 'ilabor360',
-            priority: 'medium'
-          });
-
+          // Create new job
+          const newJob = new UnifiedJob(jobData);
           await newJob.save();
           added++;
         }
       } catch (error: any) {
-        console.error(`Error processing requisition ${req.source?.metadata?.reqId}:`, error.message);
+        console.error(`Error processing requisition ${req.requisition_id}:`, error.message);
         errors.push({
-          itemId: req.source?.metadata?.reqId,
+          itemId: req.requisition_id,
           itemType: 'requisition',
           error: error.message,
           timestamp: new Date()
@@ -444,79 +546,66 @@ class ILabor360Service {
   }
 
   /**
-   * Process and link submissions to UnifiedJobs
+   * Extract skills from requisition
    */
-  private async processSubmissions(submissions: any[], userId: string): Promise<any> {
-    let added = 0;
-    let updated = 0;
-    let skipped = 0;
-    const errors: any[] = [];
+  private extractSkills(req: any): string[] {
+    const skills: string[] = [];
 
-    for (const sub of submissions) {
-      try {
-        const reqId = `ILABOR360-${sub.reqId}`;
-
-        // Find corresponding job
-        const job = await UnifiedJob.findOne({
-          'sources.type': 'ilabor360',
-          'sources.id': reqId
-        });
-
-        if (!job) {
-          console.warn(`No job found for submission ${sub.submissionId} (reqId: ${reqId})`);
-          skipped++;
-          continue;
-        }
-
-        // Check if candidate exists in our system
-        let candidate = await RecruiterResume.findOne({
-          name: { $regex: new RegExp(sub.candidateName, 'i') }
-        });
-
-        // Initialize submissions array if it doesn't exist
-        if (!job.submissions) {
-          job.submissions = [];
-        }
-
-        // Check if submission already exists
-        const existingSubmission = job.submissions.find(
-          (s: any) => s.candidateName === sub.candidateName
-        );
-
-        if (existingSubmission) {
-          // Update existing submission
-          existingSubmission.status = sub.status;
-          existingSubmission.notes = sub.notes;
-          updated++;
-        } else {
-          // Add new submission
-          job.submissions.push({
-            candidateId: candidate?._id,
-            candidateName: sub.candidateName,
-            submittedAt: sub.submittedAt || new Date(),
-            status: sub.status,
-            matchScore: 0, // Will be calculated by matching service
-            notes: sub.notes
-          } as any);
-          added++;
-        }
-
-        job.applicationsCount = job.submissions.length;
-        await job.save();
-
-      } catch (error: any) {
-        console.error(`Error processing submission ${sub.submissionId}:`, error.message);
-        errors.push({
-          itemId: sub.submissionId,
-          itemType: 'submission',
-          error: error.message,
-          timestamp: new Date()
-        });
-        skipped++;
-      }
+    if (req.primary_skill_set) {
+      skills.push(...req.primary_skill_set.split(',').map((s: string) => s.trim()).filter(Boolean));
     }
 
-    return { added, updated, skipped, errors };
+    if (req.secondary_skill_set) {
+      skills.push(...req.secondary_skill_set.split(',').map((s: string) => s.trim()).filter(Boolean));
+    }
+
+    if (req.other_skill_set) {
+      skills.push(...req.other_skill_set.split(',').map((s: string) => s.trim()).filter(Boolean));
+    }
+
+    return [...new Set(skills)]; // Remove duplicates
+  }
+
+  /**
+   * Format location from API location object
+   */
+  private formatLocation(location: any): string {
+    if (!location) return 'Remote';
+
+    const parts: string[] = [];
+    if (location.city) parts.push(location.city);
+    if (location.state) parts.push(location.state);
+    if (location.country) parts.push(location.country);
+
+    return parts.length > 0 ? parts.join(', ') : 'Remote';
+  }
+
+  /**
+   * Determine location type
+   */
+  private determineLocationType(req: any): 'remote' | 'onsite' | 'hybrid' {
+    const location = req.location;
+    if (!location || !location.city) {
+      return 'remote';
+    }
+    // Default to onsite if location is specified
+    return 'onsite';
+  }
+
+  /**
+   * Map status from API to UnifiedJob status
+   */
+  private mapStatus(statusName: string | undefined): 'open' | 'closed' | 'on-hold' {
+    if (!statusName) return 'open';
+
+    const status = statusName.toLowerCase();
+    if (status.includes('closed') || status.includes('filled') || status.includes('cancelled')) {
+      return 'closed';
+    }
+    if (status.includes('hold') || status.includes('pending')) {
+      return 'on-hold';
+    }
+    return 'open';
   }
 
   /**
@@ -528,7 +617,6 @@ class ILabor360Service {
     if (!config) {
       return {
         totalRequisitionsSynced: 0,
-        totalSubmissionsSynced: 0,
         lastSyncDate: null,
         recentSyncs: []
       };
@@ -542,16 +630,13 @@ class ILabor360Service {
 
     return {
       totalRequisitionsSynced: config.totalRequisitionsSynced,
-      totalSubmissionsSynced: config.totalSubmissionsSynced,
       lastSyncDate: config.lastSyncDate,
       lastSyncRequisitionCount: config.lastSyncRequisitionCount,
-      lastSyncSubmissionCount: config.lastSyncSubmissionCount,
       errorCount: config.errorCount,
       recentSyncs: recentSyncs.map((log: any) => ({
         date: log.createdAt,
         status: log.status,
         requisitionsAdded: log.requisitionsAdded,
-        submissionsAdded: log.submissionsAdded,
         duration: log.durationMs,
         errors: log.syncErrors?.length || 0
       }))

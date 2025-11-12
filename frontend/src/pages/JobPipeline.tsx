@@ -17,6 +17,7 @@ import {
   PhoneIcon,
   ArrowLeftIcon,
   ArrowPathIcon,
+  TrashIcon,
 } from '@heroicons/react/24/outline';
 import { StarIcon as StarIconSolid } from '@heroicons/react/24/solid';
 import axios from 'axios';
@@ -113,12 +114,15 @@ const JobPipeline: React.FC = () => {
   const [ilabor360Syncing, setIlabor360Syncing] = useState(false);
   const [ceipalConnected, setCeipalConnected] = useState(false);
   const [ceipalSyncing, setCeipalSyncing] = useState(false);
+  const [outlookConnected, setOutlookConnected] = useState(false);
+  const [outlookSyncing, setOutlookSyncing] = useState(false);
 
   // Fetch jobs and check connection status
   useEffect(() => {
     fetchJobs();
     checkILabor360Status();
     checkCeipalStatus();
+    checkOutlookStatus();
   }, []);
 
   // Apply filters
@@ -157,6 +161,52 @@ const JobPipeline: React.FC = () => {
     } catch (error: any) {
       console.error('Error fetching jobs:', error);
       toast.error('Failed to fetch jobs');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleClearAllJobs = async () => {
+    const confirmation = window.confirm(
+      '⚠️ WARNING: This will permanently delete ALL jobs from the database!\n\n' +
+      'This action cannot be undone. Are you sure you want to continue?'
+    );
+
+    if (!confirmation) return;
+
+    const doubleCheck = window.confirm(
+      '🚨 FINAL CONFIRMATION: Delete all job data?\n\n' +
+      'Click OK to permanently delete everything.'
+    );
+
+    if (!doubleCheck) return;
+
+    try {
+      setLoading(true);
+      console.log('🗑️ Attempting to clear all jobs...');
+      console.log('API URL:', `${API_URL}/api/recruiter/jobs/clear-all`);
+
+      const response = await axios.delete(`${API_URL}/api/recruiter/jobs/clear-all`);
+
+      console.log('✅ Delete response:', response.data);
+
+      toast.success(`✅ Success! ${response.data.deletedCount} job(s) deleted from database.`);
+
+      // Refresh data
+      setJobs([]);
+      setFilteredJobs([]);
+      setSelectedJob(null);
+      await fetchJobs();
+    } catch (error: any) {
+      console.error('❌ Error clearing jobs:', error);
+      console.error('Error details:', {
+        message: error.message,
+        response: error.response?.data,
+        status: error.response?.status,
+      });
+
+      const errorMsg = error.response?.data?.message || error.message || 'Failed to clear jobs';
+      toast.error(`Failed to clear jobs: ${errorMsg}`);
     } finally {
       setLoading(false);
     }
@@ -314,6 +364,48 @@ const JobPipeline: React.FC = () => {
     }
   };
 
+  const checkOutlookStatus = async () => {
+    try {
+      const response = await axios.get(`${API_URL}/api/outlook/status`);
+      if (response.data.success) {
+        setOutlookConnected(response.data.authenticated && response.data.configured);
+      }
+    } catch (error) {
+      console.error('Error checking Outlook status:', error);
+    }
+  };
+
+  const handleSyncOutlook = async () => {
+    if (!outlookConnected) {
+      toast.error('Please connect to Outlook first in Resume Dashboard');
+      navigate('/resume-dashboard');
+      return;
+    }
+
+    try {
+      setOutlookSyncing(true);
+      const response = await axios.post(`${API_URL}/api/outlook/sync-jobs`, {
+        userId: 'default-user',
+        syncPeriod: 'lastMonth'
+      });
+
+      if (response.data.success) {
+        toast.success(
+          `Outlook Sync Complete!\n` +
+          `${response.data.jobsProcessed} jobs synced from email`
+        );
+
+        // Refresh jobs list
+        fetchJobs();
+      }
+    } catch (error: any) {
+      console.error('Error syncing Outlook:', error);
+      toast.error(error.response?.data?.error || 'Failed to sync with Outlook');
+    } finally {
+      setOutlookSyncing(false);
+    }
+  };
+
   const getStatusBadge = (status: string) => {
     const styles: Record<string, { bg: string; text: string; icon: any }> = {
       open: { bg: 'bg-green-100', text: 'text-green-800', icon: CheckCircleIcon },
@@ -360,6 +452,7 @@ const JobPipeline: React.FC = () => {
       ceipal: { bg: 'bg-purple-100', text: 'text-purple-800' },
       vms: { bg: 'bg-teal-100', text: 'text-teal-800' },
       ilabor360: { bg: 'bg-orange-100', text: 'text-orange-800' },
+      outlook: { bg: 'bg-blue-100', text: 'text-blue-800' },
       manual: { bg: 'bg-gray-100', text: 'text-gray-800' },
     };
 
@@ -456,6 +549,25 @@ const JobPipeline: React.FC = () => {
                 <span>{ilabor360Syncing ? 'Syncing...' : ilabor360Connected ? 'Sync iLabor360' : 'iLabor360'}</span>
               </button>
 
+              {/* Outlook Sync */}
+              <button
+                onClick={handleSyncOutlook}
+                disabled={outlookSyncing}
+                className={`flex items-center space-x-2 px-4 py-2 rounded-lg disabled:opacity-50 transition-all ${
+                  outlookConnected
+                    ? 'bg-blue-600 text-white hover:bg-blue-700 shadow-md'
+                    : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
+                title={outlookConnected ? 'Sync jobs from Outlook emails' : 'Click to connect Outlook in Resume Dashboard'}
+              >
+                {outlookSyncing ? (
+                  <ArrowPathIcon className="h-5 w-5 animate-spin" />
+                ) : (
+                  <EnvelopeIcon className="h-5 w-5" />
+                )}
+                <span>{outlookSyncing ? 'Syncing...' : outlookConnected ? 'Sync Outlook' : 'Outlook'}</span>
+              </button>
+
               {/* Settings Dropdown or Multiple Buttons */}
               <button
                 onClick={() => navigate('/ceipal-settings')}
@@ -488,6 +600,15 @@ const JobPipeline: React.FC = () => {
                 title="Refresh jobs list"
               >
                 <ArrowPathIcon className="h-5 w-5" />
+              </button>
+
+              {/* Clear All Jobs */}
+              <button
+                onClick={handleClearAllJobs}
+                className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition-colors"
+                title="Clear all jobs"
+              >
+                <TrashIcon className="h-5 w-5" />
               </button>
             </div>
           </div>
@@ -533,6 +654,7 @@ const JobPipeline: React.FC = () => {
               <option value="vms">VMS</option>
               <option value="ilabor360">iLabor360</option>
               <option value="ceipal">Ceipal</option>
+              <option value="outlook">Outlook</option>
               <option value="manual">Manual</option>
             </select>
           </div>

@@ -18,6 +18,7 @@ export interface ICeipalConfig extends Document {
   apiKey: string;
   accessToken?: string; // OAuth/Bearer token for Ceipal API
   resumeApiUrl?: string; // User's configured resume API endpoint
+  module?: string; // Ceipal module (e.g., 'ATS' for Applicant Tracking System)
 
   // Field Mappings (which fields to fetch from API)
   fieldMappings?: ICeipalFieldMapping[];
@@ -77,6 +78,11 @@ const ceipalConfigSchema = new Schema<ICeipalConfig>(
     resumeApiUrl: {
       type: String,
       required: false
+    },
+    module: {
+      type: String,
+      required: false,
+      default: 'ATS' // Default to ATS (Applicant Tracking System)
     },
 
     // Field Mappings

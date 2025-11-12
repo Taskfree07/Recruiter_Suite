@@ -78,9 +78,9 @@ class ParserService {
     return this.parseResumeText(text);
   }
 
-  // Parse resume text
+  // Parse resume text with enhanced name extraction
   parseResumeText(text: string): ParsedResume {
-    const lines = text.split('\n').map(line => line.trim());
+    const lines = text.split('\n').map(line => line.trim()).filter(line => line.length > 0);
     
     // Extract email
     const emailRegex = /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b/;
@@ -92,8 +92,100 @@ class ParserService {
     const phoneMatch = text.match(phoneRegex);
     const phone = phoneMatch ? phoneMatch[0] : '';
 
-    // Extract name (usually first non-empty line)
-    const name = lines.find(line => line.length > 2 && !line.includes('@')) || 'Unknown';
+    // Enhanced name extraction with strict filtering
+    let name = 'Unknown';
+    
+    // Common resume section headers to AVOID
+    const sectionHeaders = [
+      'resume', 'curriculum vitae', 'cv', 'profile', 'contact', 'summary', 'objective',
+      'experience', 'employment', 'work history', 'education', 'skills', 'certifications',
+      'projects', 'achievements', 'references', 'languages', 'interests', 'hobbies',
+      'career', 'professional', 'personal', 'about', 'qualifications', 'highlights',
+      'technical skills', 'soft skills', 'core competencies', 'areas of expertise',
+      'professional summary', 'career objective', 'career summary', 'work experience',
+      'professional experience', 'employment history', 'job history', 'professional affiliations',
+      'memberships', 'licenses', 'training', 'awards', 'honors', 'publications',
+      'teaching experience', 'research', 'volunteer', 'activities', 'additional information',
+      'personal details', 'personal information', 'address', 'email', 'phone', 'mobile',
+      'company name', 'organization', 'current position', 'desired position',
+      'systems engineering', 'manufacturing', 'commerce', 'engineering director',
+      'program management', 'project management', 'people management', 'client engagement'
+    ];
+    
+    // Strategy 1: Look in first 10 lines for a proper name
+    for (let i = 0; i < Math.min(10, lines.length); i++) {
+      const line = lines[i];
+      
+      // Skip if line is too short or too long
+      if (line.length < 3 || line.length > 50) continue;
+      
+      // Skip if it contains common section header keywords
+      const lowerLine = line.toLowerCase();
+      if (sectionHeaders.some(header => lowerLine.includes(header))) continue;
+      
+      // Skip if it contains email or phone markers
+      if (/@|email|phone|mobile|tel:|address|location|linkedin/i.test(line)) continue;
+      
+      // Skip if it contains years or dates (2019, 2020, Jan 2019, etc.)
+      if (/\b(19|20)\d{2}\b|jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec/i.test(line)) continue;
+      
+      // Check if line looks like a name (2-4 capitalized words)
+      // Must start with capital letter and have proper word pattern
+      if (/^[A-Z][a-z]+(?:\s+[A-Z][a-z]*\.?){1,3}$/.test(line)) {
+        name = line;
+        console.log(`✓ Extracted name from line ${i + 1}: "${name}"`);
+        break;
+      }
+      
+      // Check for ALL CAPS names (common in resumes)
+      if (/^[A-Z][A-Z\s]{2,40}$/.test(line) && !lowerLine.includes('  ')) {
+        // Convert to title case
+        name = line.split(' ').map(word => 
+          word.charAt(0).toUpperCase() + word.slice(1).toLowerCase()
+        ).join(' ');
+        console.log(`✓ Extracted name from ALL CAPS line ${i + 1}: "${name}"`);
+        break;
+      }
+    }
+    
+    // Strategy 2: Look for explicit name labels
+    if (name === 'Unknown') {
+      const namePatterns = [
+        /(?:^|\n)Name\s*[:\-]\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})/im,
+        /(?:^|\n)Full Name\s*[:\-]\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,3})/im,
+      ];
+      
+      for (const pattern of namePatterns) {
+        const match = text.match(pattern);
+        if (match && match[1]) {
+          const potentialName = match[1].trim();
+          const lowerName = potentialName.toLowerCase();
+          if (!sectionHeaders.some(header => lowerName.includes(header))) {
+            name = potentialName;
+            console.log(`✓ Extracted name from label: "${name}"`);
+            break;
+          }
+        }
+      }
+    }
+    
+    // Strategy 3: Extract from email prefix if still unknown
+    if (name === 'Unknown' && email) {
+      const emailPrefix = email.split('@')[0];
+      // Only use email if it looks like a name (contains . or _)
+      if (emailPrefix.includes('.') || emailPrefix.includes('_')) {
+        const nameParts = emailPrefix.split(/[._-]/).map(part => 
+          part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()
+        );
+        if (nameParts.length >= 2) {
+          name = nameParts.slice(0, 2).join(' '); // Take first 2 parts only
+          console.log(`✓ Extracted name from email: "${name}"`);
+        }
+      }
+    }
+    
+    console.log(`📝 Final extracted name: "${name}"`);
+
 
     // Extract skills (common programming languages and technologies)
     const skillKeywords = [

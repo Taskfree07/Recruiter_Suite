@@ -247,7 +247,14 @@ class RecruiterParserService {
     tools: string[];
     databases: string[];
   }): { category: string; priority: number; matchedSkills: string[] }[] {
-    const allSkills = [...skills.primary, ...skills.frameworks];
+    // Ensure all skill arrays are valid before using them
+    const primarySkills = Array.isArray(skills.primary) ? skills.primary : [];
+    const frameworks = Array.isArray(skills.frameworks) ? skills.frameworks : [];
+    const cloudPlatforms = Array.isArray(skills.cloudPlatforms) ? skills.cloudPlatforms : [];
+    const tools = Array.isArray(skills.tools) ? skills.tools : [];
+    const databases = Array.isArray(skills.databases) ? skills.databases : [];
+    
+    const allSkills = [...primarySkills, ...frameworks];
     const categories: { category: string; priority: number; matchedSkills: string[] }[] = [];
 
     // Frontend skills
@@ -263,15 +270,15 @@ class RecruiterParserService {
     const mobileMatches = allSkills.filter(skill => mobileSkills.includes(skill));
 
     // DevOps/Cloud skills
-    const devopsSkills = ['Docker', 'Kubernetes', 'Jenkins', 'CI/CD', 'Terraform', 'Ansible', ...skills.cloudPlatforms];
-    const devopsMatches = [...skills.cloudPlatforms, ...skills.tools];
+    const devopsSkills = ['Docker', 'Kubernetes', 'Jenkins', 'CI/CD', 'Terraform', 'Ansible', ...cloudPlatforms];
+    const devopsMatches = [...cloudPlatforms, ...tools];
 
     // Data & AI skills
     const dataAISkills = ['Machine Learning', 'Deep Learning', 'Data Science', 'Big Data', 'NLP', 'Computer Vision'];
     const dataAIMatches = allSkills.filter(skill => dataAISkills.includes(skill));
 
     // Database skills
-    const databaseMatches = skills.databases;
+    const databaseMatches = databases;
 
     // Calculate priorities based on number of matched skills
     if (frontendMatches.length > 0 && backendMatches.length > 0) {
@@ -405,16 +412,18 @@ class RecruiterParserService {
     return undefined;
   }
 
-  // Main parsing function for recruiter flow
+  // Main parsing function for recruiter flow - KEYWORD-BASED ONLY
   async parseResumeForRecruiter(filePath: string, sourceInfo?: any): Promise<EnhancedParsedResume> {
     // Use existing parser service to extract text
     const basicParsed = await parserService.parseResume(filePath);
     const text = basicParsed.rawText;
 
-    // Extract enhanced skills
+    console.log('📄 Parsing resume with keyword extraction...');
+
+    // Extract skills using enhanced keyword matching
     const skills = this.extractSkillsFromText(text);
 
-    // Extract experience
+    // Extract experience using pattern matching
     const totalExperience = this.extractTotalExperience(text);
 
     // Determine category
@@ -424,21 +433,47 @@ class RecruiterParserService {
     // Get specific skills for folder organization
     const specificSkills = [...new Set([...skills.primary, ...skills.frameworks.slice(0, 3)])];
 
-    // Extract additional info
+    // Extract additional info using keyword patterns
     const linkedIn = this.extractLinkedIn(text);
     const noticePeriod = this.extractNoticePeriod(text);
+    const currentCompany = this.extractCurrentCompany(text);
 
-    // Extract current company (look for "currently working at" patterns)
-    const currentCompanyPattern = /(?:currently|presently)\s*(?:working)?\s*(?:at|with|for)\s*([A-Z][A-Za-z\s&]+)/i;
-    const companyMatch = text.match(currentCompanyPattern);
-    const currentCompany = companyMatch ? companyMatch[1].trim() : undefined;
+    // Use filename as fallback for name if extraction failed
+    let candidateName = basicParsed.personalInfo.name;
+    if (!candidateName || candidateName === 'Unknown') {
+      // Extract name from filename (remove path, extension, and timestamp)
+      const path = require('path');
+      const filename = path.basename(filePath);
+      
+      // Pattern: "1234567890_ADIKA_MAUL_State_of_FL_Formatted.doc"
+      // Remove extension, timestamp prefix, and everything after "State" or "Resume"
+      candidateName = filename
+        .replace(/\.\w+$/, '') // Remove extension
+        .replace(/^\d+_/, '') // Remove timestamp prefix
+        .replace(/_State.*$/i, '') // Remove "_State of FL_Formatted" etc.
+        .replace(/_Resume.*$/i, '') // Remove "_Resume" etc.
+        .replace(/_Original$/i, '') // Remove "_Original"
+        .replace(/_Formatted$/i, '') // Remove "_Formatted"
+        .replace(/[_-]/g, ' ') // Replace underscores and hyphens with spaces
+        .trim()
+        .split(' ') // Convert to title case
+        .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
+        .join(' ');
+      console.log(`📝 Using filename as name: "${candidateName}"`);
+    }
+
+    // Use keyword-extracted personal info
+    const personalInfo = {
+      name: candidateName,
+      email: basicParsed.personalInfo.email,
+      phone: basicParsed.personalInfo.phone,
+      location: basicParsed.personalInfo.location,
+      linkedIn,
+      currentCompany
+    };
 
     return {
-      personalInfo: {
-        ...basicParsed.personalInfo,
-        linkedIn,
-        currentCompany
-      },
+      personalInfo,
       professionalDetails: {
         totalExperience,
         noticePeriod
@@ -455,6 +490,66 @@ class RecruiterParserService {
       projects: [],
       rawText: text
     };
+  }
+
+  // AI-powered resume enhancement
+  private async enhanceWithAI(text: string, groqService: any): Promise<any> {
+    const prompt = `Extract key information from this resume. Return ONLY valid JSON:
+
+RESUME TEXT:
+${text.substring(0, 4000)}
+
+Return this JSON structure:
+{
+  "name": "full name",
+  "email": "email@example.com",
+  "phone": "phone number",
+  "location": "city, country",
+  "currentCompany": "current employer",
+  "totalExperience": 5,
+  "linkedIn": "linkedin url",
+  "noticePeriod": "immediate/30 days/etc",
+  "skills": {
+    "primary": ["skill1", "skill2"],
+    "frameworks": ["framework1", "framework2"],
+    "databases": ["db1", "db2"],
+    "cloudPlatforms": ["aws", "azure"],
+    "tools": ["tool1", "tool2"]
+  }
+}
+
+Extract ALL skills mentioned. If not found, use null.`;
+
+    try {
+      const response = await groqService.client.chat.completions.create({
+        model: 'llama-3.3-70b-versatile',
+        messages: [{ role: 'user', content: prompt }],
+        temperature: 0.2,
+        max_tokens: 1500
+      });
+
+      let text = response.choices[0]?.message?.content || '';
+      text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
+      
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        text = jsonMatch[0];
+      }
+
+      const parsed = JSON.parse(text);
+      console.log('✅ AI-enhanced resume parsing successful');
+      return parsed;
+    } catch (error) {
+      console.error('❌ AI enhancement error:', error);
+      return null;
+    }
+  }
+
+  // Extract current company from text
+  private extractCurrentCompany(text: string): string | undefined {
+    const currentCompanyPattern = /(?:currently|presently)\s*(?:working)?\s*(?:at|with|for)\s*([A-Z][A-Za-z\s&]+)/i;
+    const companyMatch = text.match(currentCompanyPattern);
+    return companyMatch ? companyMatch[1].trim() : undefined;
   }
 }
 

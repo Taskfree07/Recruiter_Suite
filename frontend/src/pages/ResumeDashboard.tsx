@@ -86,6 +86,7 @@ const ResumeDashboard: React.FC = () => {
   const [selectedSkill, setSelectedSkill] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [dateFilter, setDateFilter] = useState<'all' | 'today' | 'week' | 'month'>('all');
+  const [sourceFilter, setSourceFilter] = useState<'all' | 'ceipal' | 'outlook' | 'uploaded'>('all');
   const [sortBy, setSortBy] = useState<'date' | 'score' | 'name'>('date');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [uploadingFiles, setUploadingFiles] = useState(false);
@@ -113,7 +114,7 @@ const ResumeDashboard: React.FC = () => {
     } else {
       fetchRecentResumes();
     }
-  }, [selectedCategory, selectedSkill, dateFilter, sortBy, sortOrder]);
+  }, [selectedCategory, selectedSkill, dateFilter, sourceFilter, sortBy, sortOrder]);
 
   const fetchStats = async () => {
     try {
@@ -140,6 +141,7 @@ const ResumeDashboard: React.FC = () => {
         params: {
           limit: 50,
           dateFilter,
+          sourceFilter: sourceFilter !== 'all' ? sourceFilter : undefined,
           sortBy,
           sortOrder
         }
@@ -159,6 +161,7 @@ const ResumeDashboard: React.FC = () => {
         const response = await axios.get(`${API_URL}/recruiter/skills/${selectedSkill}/resumes`, {
           params: {
             dateFilter,
+            sourceFilter: sourceFilter !== 'all' ? sourceFilter : undefined,
             sortBy,
             sortOrder
           }
@@ -170,6 +173,7 @@ const ResumeDashboard: React.FC = () => {
             category: selectedCategory,
             limit: 50,
             dateFilter,
+            sourceFilter: sourceFilter !== 'all' ? sourceFilter : undefined,
             sortBy,
             sortOrder
           }
@@ -742,6 +746,20 @@ const ResumeDashboard: React.FC = () => {
 
           {/* Filter Controls */}
           <div className="p-4 border-t border-gray-200 space-y-3">
+            <div>
+              <label className="block text-xs font-medium text-gray-700 mb-1">Source</label>
+              <select
+                value={sourceFilter}
+                onChange={(e) => setSourceFilter(e.target.value as any)}
+                className="w-full px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="all">All Sources</option>
+                <option value="ceipal">📊 Ceipal ATS</option>
+                <option value="outlook">📧 Outlook Email</option>
+                <option value="uploaded">📤 Uploaded Files</option>
+              </select>
+            </div>
+
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Date</label>
               <select

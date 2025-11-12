@@ -51,12 +51,12 @@ class CeipalService {
     console.log(`🔑 Using API key: ${config.apiKey.substring(0, 20)}...`);
 
     try {
-      // Ceipal auth payload
+      // Ceipal auth payload - per official API documentation
+      // Only email, password, and api_key are required
       const authPayload = {
         email: config.username,
         password: config.password,
-        api_key: config.apiKey,
-        json: 1
+        api_key: config.apiKey
       };
 
       console.log(`📤 Sending auth request...`);
@@ -237,6 +237,22 @@ class CeipalService {
   }
 
   /**
+   * Get the resume API URL from config (checks both new and old field names)
+   */
+  private getResumeApiUrl(config: any): string | null {
+    // Check new field name first
+    if (config.resumeApiUrl) {
+      return config.resumeApiUrl;
+    }
+    // Fallback to old field name for backwards compatibility
+    if (config.customEndpoint) {
+      console.log('⚠️ Using customEndpoint (old field), please update to resumeApiUrl');
+      return config.customEndpoint;
+    }
+    return null;
+  }
+
+  /**
    * Test connection to Ceipal API
    */
   async testConnection(userId: string = 'default-user'): Promise<any> {
@@ -265,7 +281,8 @@ class CeipalService {
         throw new Error('Email and Password are required. Please add them in settings.');
       }
 
-      if (!config.resumeApiUrl) {
+      const resumeApiUrl = this.getResumeApiUrl(config);
+      if (!resumeApiUrl) {
         throw new Error('Resume API URL is required. Please add your configured resume endpoint URL in settings.');
       }
 
@@ -282,7 +299,7 @@ class CeipalService {
       console.log(`✅ Access token generated successfully`);
 
       // Test using the Resume API URL
-      const endpointUrl = config.resumeApiUrl;
+      const endpointUrl = resumeApiUrl;
       console.log(`📍 Testing endpoint: ${endpointUrl}`);
 
       // Build query params for testing - just fetch first page
@@ -910,7 +927,8 @@ ${job.skills.map(skill => `- Strong proficiency in ${skill}`).join('\n')}
         throw new Error('Email and Password are required for authentication. Please add them in settings.');
       }
 
-      if (!config.resumeApiUrl) {
+      const resumeApiUrl = this.getResumeApiUrl(config);
+      if (!resumeApiUrl) {
         throw new Error('Resume API URL is required. Please add your configured resume endpoint URL in settings.');
       }
 
@@ -923,7 +941,7 @@ ${job.skills.map(skill => `- Strong proficiency in ${skill}`).join('\n')}
       }
 
       // Use the user's configured Resume API URL
-      const endpointUrl = config.resumeApiUrl;
+      const endpointUrl = resumeApiUrl;
 
       console.log(`📍 Fetching resumes from: ${endpointUrl}`);
 

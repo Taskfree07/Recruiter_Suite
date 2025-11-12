@@ -201,6 +201,7 @@ router.get('/resumes', async (req: Request, res: Response): Promise<void> => {
       status,
       minScore,
       search,
+      sourceFilter, // 'ceipal', 'outlook', 'uploaded', 'all'
       dateFilter, // 'today', 'week', 'month', 'all'
       startDate,  // Custom date range start
       endDate,    // Custom date range end
@@ -230,6 +231,11 @@ router.get('/resumes', async (req: Request, res: Response): Promise<void> => {
 
     if (minScore) {
       query['scores.overall'] = { $gte: parseInt(minScore as string) };
+    }
+
+    // Source filtering
+    if (sourceFilter && sourceFilter !== 'all') {
+      query['source.type'] = sourceFilter;
     }
 
     // Date filtering

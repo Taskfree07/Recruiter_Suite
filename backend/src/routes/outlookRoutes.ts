@@ -150,6 +150,72 @@ router.post('/sync', async (req: Request, res: Response): Promise<void> => {
 });
 
 /**
+ * POST /api/outlook/sync-jobs
+ * Sync job descriptions from Outlook emails
+ */
+router.post('/sync-jobs', async (req: Request, res: Response): Promise<void> => {
+  try {
+    const { userId = 'default-user', syncPeriod = 'lastMonth' } = req.body;
+
+    // Check if user is authenticated
+    const tokenData = userTokens.get(userId);
+
+    if (!tokenData) {
+      res.status(401).json({
+        error: 'Not authenticated. Please login with Outlook first.',
+        authenticated: false
+      });
+      return;
+    }
+
+    // Check if token is expired
+    if (new Date() >= tokenData.expiresOn) {
+      userTokens.delete(userId);
+      res.status(401).json({
+        error: 'Token expired. Please login again.',
+        authenticated: false
+      });
+      return;
+    }
+
+    console.log(`🔄 Starting Outlook job sync for user ${userId} - Period: ${syncPeriod}`);
+
+    // Get user email from token
+    const userEmail = userId;
+
+    // Sync jobs
+    const result = await outlookService.syncJobs(tokenData.accessToken, {
+      syncPeriod: syncPeriod as 'lastMonth' | 'all',
+      userEmail
+    });
+
+    res.json({
+      success: true,
+      message: `Successfully synced ${result.jobsProcessed} job(s) from Outlook`,
+      jobsProcessed: result.jobsProcessed,
+      errors: result.errors,
+      userEmail: result.userEmail
+    });
+
+  } catch (error: any) {
+    console.error('❌ Outlook job sync error:', error);
+
+    // Handle specific Graph API errors
+    if (error.statusCode === 401) {
+      res.status(401).json({
+        error: 'Authentication failed. Please login again.',
+        authenticated: false
+      });
+      return;
+    }
+
+    res.status(500).json({
+      error: error.message || 'Failed to sync jobs from Outlook'
+    });
+  }
+});
+
+/**
  * GET /api/outlook/status
  * Check Outlook connection and sync status
  */

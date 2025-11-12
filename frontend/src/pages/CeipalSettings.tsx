@@ -278,16 +278,16 @@ const CeipalSettings: React.FC = () => {
               </label>
             </div>
 
-            {/* API Key / Access Token (Primary Method) */}
+            {/* API Key (Primary Method) */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                API Key / Access Token <span className="text-red-500">*</span>
+                API Key <span className="text-red-500">*</span>
                 {config.mockMode && <span className="text-xs text-gray-500"> (disabled in mock mode)</span>}
               </label>
               <input
                 type="password"
-                value={config.apiKey !== 'MOCK_API_KEY' ? config.apiKey : (config.accessToken || '')}
-                onChange={(e) => setConfig({ ...config, apiKey: e.target.value, accessToken: e.target.value })}
+                value={config.apiKey !== 'MOCK_API_KEY' ? config.apiKey : ''}
+                onChange={(e) => setConfig({ ...config, apiKey: e.target.value })}
                 disabled={config.mockMode}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500"
                 placeholder="Paste your Ceipal API Key here (from Ceipal Settings → API)"

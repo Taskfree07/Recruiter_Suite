@@ -42,8 +42,11 @@ class GeminiService {
   private initialize() {
     // Skip if already initialized
     if (this.isInitialized) {
+      console.log('ℹ️ Gemini already initialized, skipping...');
       return;
     }
+
+    console.log('🔄 Initializing Gemini AI Service...');
 
     try {
       this.apiKey = process.env.GEMINI_API_KEY || '';
@@ -112,12 +115,19 @@ class GeminiService {
    * Parse job description from email text
    */
   async parseJobDescriptionFromEmail(emailContent: string): Promise<JobDescription | null> {
+    // Try to initialize if not already initialized
+    if (!this.isInitialized) {
+      this.initialize();
+    }
+
     if (!this.isInitialized || !this.model) {
-      console.error('Gemini AI not initialized');
+      console.error('Gemini AI not initialized - check GEMINI_API_KEY in .env file');
       return null;
     }
 
     try {
+      console.log('🤖 Calling Gemini AI to parse job description...');
+      
       const prompt = `
 You are an expert recruiter assistant. Extract structured job information from the following email.
 
@@ -159,15 +169,23 @@ Important:
       const response = await result.response;
       let text = response.text().trim();
 
+      console.log('📝 Gemini raw response length:', text.length);
+
       // Clean up response (remove markdown code blocks if present)
       text = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
 
       // Parse JSON
       const jobData = JSON.parse(text);
 
+      console.log('✅ Successfully parsed job:', jobData.title, 'at', jobData.company);
       return jobData as JobDescription;
     } catch (error: any) {
-      console.error('Error parsing job description:', error);
+      console.error('❌ Error parsing job description:');
+      console.error('   Error type:', error.constructor.name);
+      console.error('   Error message:', error.message);
+      if (error.stack) {
+        console.error('   Stack trace:', error.stack.split('\n')[1]);
+      }
       return null;
     }
   }
@@ -180,8 +198,13 @@ Important:
     jobData: any,
     matchScore: number
   ): Promise<MatchExplanation | null> {
+    // Try to initialize if not already initialized
+    if (!this.isInitialized) {
+      this.initialize();
+    }
+
     if (!this.isInitialized || !this.model) {
-      console.error('Gemini AI not initialized');
+      console.error('Gemini AI not initialized - check GEMINI_API_KEY in .env file');
       return null;
     }
 

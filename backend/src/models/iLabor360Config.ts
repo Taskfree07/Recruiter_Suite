@@ -3,28 +3,27 @@ import mongoose, { Document, Schema } from 'mongoose';
 export interface IILabor360Config extends Document {
   userId: string;
 
-  // Authentication
-  username: string;
-  password: string; // Encrypted
-  loginUrl: string;
+  // REST API v2.0 Authentication
+  apiUsername: string;
+  apiKey: string; // Encrypted
+  apiPassword: string; // Encrypted
+  sysUserId: string;
+  apiBaseUrl: string;
 
   // Connection Status
   connectionStatus: 'connected' | 'disconnected' | 'error';
   lastConnectionTest?: Date;
   lastError?: string;
+  lastApiToken?: string; // Cached token (15 min validity)
+  lastTokenTime?: Date;
 
   // Sync Settings
   syncEnabled: boolean;
   syncInterval: number; // Minutes
   autoSync: boolean;
   lastSyncDate?: Date;
-
-  // Scraping Config
-  requisitionsUrl?: string;
-  submissionsUrl?: string;
-  maxRequisitionsPerSync: number;
-  maxSubmissionsPerSync: number;
-  scrapingTimeout: number; // Seconds
+  syncDateRange: number; // Days (1-3 max)
+  useModifiedDate: boolean; // Use modifyStartDate/modifyEndDate instead of StartDate/EndDate
 
   // Filters
   filterByStatus?: string[];
@@ -33,9 +32,7 @@ export interface IILabor360Config extends Document {
 
   // Stats
   totalRequisitionsSynced: number;
-  totalSubmissionsSynced: number;
   lastSyncRequisitionCount: number;
-  lastSyncSubmissionCount: number;
   errorCount: number;
 
   createdAt: Date;
@@ -51,20 +48,30 @@ const iLabor360ConfigSchema = new Schema<IILabor360Config>(
       default: 'default-user'
     },
 
-    // Authentication
-    username: {
+    // REST API v2.0 Authentication
+    apiUsername: {
       type: String,
       required: false,
       default: ''
     },
-    password: {
+    apiKey: {
       type: String,
       required: false, // Will be encrypted
       default: ''
     },
-    loginUrl: {
+    apiPassword: {
       type: String,
-      default: 'https://vendor.ilabor360.com/login'
+      required: false, // Will be encrypted
+      default: ''
+    },
+    sysUserId: {
+      type: String,
+      required: false,
+      default: ''
+    },
+    apiBaseUrl: {
+      type: String,
+      default: 'https://api.ilabor360.com/v2/rest'
     },
 
     // Connection Status
@@ -75,6 +82,8 @@ const iLabor360ConfigSchema = new Schema<IILabor360Config>(
     },
     lastConnectionTest: Date,
     lastError: String,
+    lastApiToken: String, // Cached token
+    lastTokenTime: Date,
 
     // Sync Settings
     syncEnabled: {
@@ -90,21 +99,15 @@ const iLabor360ConfigSchema = new Schema<IILabor360Config>(
       default: false
     },
     lastSyncDate: Date,
-
-    // Scraping Config
-    requisitionsUrl: String,
-    submissionsUrl: String,
-    maxRequisitionsPerSync: {
+    syncDateRange: {
       type: Number,
-      default: 100
+      default: 1, // 1 day (max 3)
+      min: 1,
+      max: 3
     },
-    maxSubmissionsPerSync: {
-      type: Number,
-      default: 100
-    },
-    scrapingTimeout: {
-      type: Number,
-      default: 60 // seconds
+    useModifiedDate: {
+      type: Boolean,
+      default: false // Use StartDate/EndDate by default
     },
 
     // Filters
@@ -117,15 +120,7 @@ const iLabor360ConfigSchema = new Schema<IILabor360Config>(
       type: Number,
       default: 0
     },
-    totalSubmissionsSynced: {
-      type: Number,
-      default: 0
-    },
     lastSyncRequisitionCount: {
-      type: Number,
-      default: 0
-    },
-    lastSyncSubmissionCount: {
       type: Number,
       default: 0
     },
